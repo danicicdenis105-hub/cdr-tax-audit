@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("analyst") // admin, analyst, auditor
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model TelecomCompany {
+  id              String       @id @default(cuid())
+  name            String
+  licenseNumber   String       @unique
+  region          String
+  status          String       @default("active") // active, under-review, suspended
+  contactEmail    String
+  contactPhone    String       @default("")
+  taxId           String
+  numberPrefixes  String       @default("") // comma-separated phone prefixes, e.g. "70,23670"
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  cdrRecords      CDRRecord[]
+  uploads         CDRUpload[]
+  reports         Report[]
+  salesReports    SalesReport[]
+  ratePlans       RatePlan[]
+}
+
+model CDRRecord {
+  id                  String         @id @default(cuid())
+  companyId           String
+  company             TelecomCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  callType            String
+  duration            Int?           // real duration in seconds
+  billedDuration      Int?           // billed duration in seconds
+  dataUsageMB         Float?
+  timestamp           DateTime
+  originNumber        String
+  destinationNumber   String
+  calculatedRevenue   Float          // Amount TTC
+  amountHT            Float?         // Amount HT = TTC / (1 + taxTTC/100)
+  taxTictech          Float?         // TICTECH = amountHT * (tictechRate/100)
+  destinationOperator String?        // resolved operator name from prefix
+  recordHash          String?        // SHA-256 for duplicate detection
+  billingType         String?        // "prepaid" or "postpaid"
+  uploadId            String?
+  upload              CDRUpload?     @relation(fields: [uploadId], references: [id])
+  createdAt           DateTime       @default(now())
+
+  @@index([companyId])
+  @@index([callType])
+  @@index([timestamp])
+  @@index([uploadId])
+  @@index([recordHash])
+}
+
+model CDRUpload {
+  id               String         @id @default(cuid())
+  companyId        String
+  company          TelecomCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fileName         String
+  fileSize         Int
+  recordCount      Int            @default(0)
+  status           String         @default("processing") // processing, completed, failed
+  errorMessage     String?
+  fileHash         String?        // SHA-256 of uploaded file for chain of custody
+  originalFileName String?        // preserve exact original filename
+  uploadedById     String?        // user ID who uploaded
+  acceptedCount    Int            @default(0)
+  rejectedCount    Int            @default(0)
+  warningCount     Int            @default(0)
+  validationReport String?        // JSON with validation details
+  uploadedAt       DateTime       @default(now())
+  processedAt      DateTime?
+  records          CDRRecord[]
+
+  @@index([companyId])
+}
+
+model SalesReport {
+  id                  String         @id @default(cuid())
+  companyId           String
+  company             TelecomCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  period              String         // e.g., "2024-01"
+  reportedRevenue     Float          // total reported (TTC)
+  voiceRevenue        Float          @default(0)
+  smsRevenue          Float          @default(0)
+  dataRevenue         Float          @default(0)
+  intlRevenue         Float          @default(0)
+  rechargeRevenue     Float          @default(0)
+  subscriptionRevenue Float          @default(0)
+  roamingRevenue      Float          @default(0)
+  submittedAt         DateTime       @default(now())
+
+  @@unique([companyId, period])
+  @@index([companyId])
+  @@index([period])
+}
+
+model Report {
+  id               String          @id @default(cuid())
+  title            String
+  type             String          // monthly, quarterly, audit, custom
+  period           String
+  status           String          @default("draft") // completed, pending, draft
+  companyId        String?
+  company          TelecomCompany? @relation(fields: [companyId], references: [id])
+  companyCount     Int             @default(0)
+  estimatedLeakage Float           @default(0)
+  fileSize         String          @default("0 KB")
+  parameters       String?         // JSON: generation parameters for reproducibility
+  version          Int             @default(1)
+  generatedBy      String?         // user ID who generated
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([companyId])
+  @@index([type])
+}
+
+model Settings {
+  id                     String  @id @default("global")
+  taxTTC                 Float   @default(26)   // TTC tax rate (Amount HT = Amount TTC / (1 + rate/100))
+  tictechRate            Float   @default(7)    // TICTECH rate applied on Amount HT
+  discrepancyThreshold   Float   @default(5)
+  criticalThreshold      Float   @default(20)
+  voiceRate              Float   @default(25)   // XAF per minute
+  smsRate                Float   @default(15)   // XAF per message
+  dataRate               Float   @default(0.5)  // XAF per MB
+  emailAlerts            Boolean @default(true)
+  weeklyReports          Boolean @default(true)
+  uploadNotifications    Boolean @default(false)
+  reportFormat           String  @default("pdf")
+  dateFormat             String  @default("dmy")
+  currency               String  @default("xaf")
+}
+
+model TaxPeriod {
+  id          String    @id @default(cuid())
+  name        String               // e.g., "2023 TVA Rate"
+  tvaRate     Float                // TVA/TTC rate for this period
+  tictechRate Float                // TICTECH rate for this period
+  startDate   DateTime
+  endDate     DateTime?            // null = still active
+  createdAt   DateTime  @default(now())
+
+  @@index([startDate])
+}
+
+model RatePlan {
+  id          String         @id @default(cuid())
+  companyId   String
+  company     TelecomCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  serviceType String         // voice, sms, data, international, recharge, subscription, roaming
+  rate        Float          // rate value (XAF per unit)
+  unit        String         // "per_minute", "per_message", "per_mb"
+  startDate   DateTime
+  endDate     DateTime?      // null = still active
+  createdAt   DateTime       @default(now())
+
+  @@unique([companyId, serviceType, startDate])
+  @@index([companyId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
