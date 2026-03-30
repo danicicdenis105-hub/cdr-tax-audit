@@ -77,6 +77,7 @@ export async function resolveOperator(phoneNumber: string, jurisdiction?: string
 // Map call types to broad categories for analysis grouping
 function categorizeCallType(callType: string): string {
   const t = callType.toLowerCase()
+  if (t === 'mobile-money' || t === 'ussd') return 'mobileMoney'
   if (t === 'recharge') return 'recharge'
   if (t === 'subscription') return 'subscription'
   if (t.includes('roaming')) return 'roaming'
@@ -119,6 +120,7 @@ export async function runAnalysis(period?: string, billingType?: string): Promis
     const rechargeRecords = cdrRecords.filter(r => categorizeCallType(r.callType) === 'recharge')
     const subscriptionRecords = cdrRecords.filter(r => categorizeCallType(r.callType) === 'subscription')
     const roamingRecords = cdrRecords.filter(r => categorizeCallType(r.callType) === 'roaming')
+    const mobileMoneyRecords = cdrRecords.filter(r => categorizeCallType(r.callType) === 'mobileMoney')
 
     const voiceRevenue = voiceRecords.reduce((sum, r) => sum + r.calculatedRevenue, 0)
     const smsRevenue = smsRecords.reduce((sum, r) => sum + r.calculatedRevenue, 0)
@@ -127,8 +129,9 @@ export async function runAnalysis(period?: string, billingType?: string): Promis
     const rechargeRevenue = rechargeRecords.reduce((sum, r) => sum + r.calculatedRevenue, 0)
     const subscriptionRevenue = subscriptionRecords.reduce((sum, r) => sum + r.calculatedRevenue, 0)
     const roamingRevenue = roamingRecords.reduce((sum, r) => sum + r.calculatedRevenue, 0)
+    const mobileMoneyRevenue = mobileMoneyRecords.reduce((sum, r) => sum + r.calculatedRevenue, 0)
 
-    const totalCDRRevenue = voiceRevenue + smsRevenue + dataRevenue + intlRevenue + rechargeRevenue + subscriptionRevenue + roamingRevenue
+    const totalCDRRevenue = voiceRevenue + smsRevenue + dataRevenue + intlRevenue + rechargeRevenue + subscriptionRevenue + roamingRevenue + mobileMoneyRevenue
 
     // Get reported revenue for the same period
     const salesWhere: Record<string, unknown> = { companyId: company.id }
@@ -176,6 +179,7 @@ export async function runAnalysis(period?: string, billingType?: string): Promis
         recharge: { count: rechargeRecords.length, revenue: rechargeRevenue },
         subscription: { count: subscriptionRecords.length, revenue: subscriptionRevenue },
         roaming: { count: roamingRecords.length, revenue: roamingRevenue },
+        mobileMoney: { count: mobileMoneyRecords.length, revenue: mobileMoneyRevenue },
       },
     })
   }
@@ -229,6 +233,7 @@ export async function getServiceTypeBreakdown(): Promise<ServiceTypeBreakdown[]>
     { label: 'Recharge', callTypes: ['recharge'], salesField: 'rechargeRevenue' },
     { label: 'Subscriptions', callTypes: ['subscription'], salesField: 'subscriptionRevenue' },
     { label: 'Roaming', callTypes: ['roaming-voice', 'roaming-sms'], salesField: 'roamingRevenue' },
+    { label: 'Mobile Money / USSD', callTypes: ['ussd', 'mobile-money'], salesField: 'mobileMoneyRevenue' },
   ]
 
   const result: ServiceTypeBreakdown[] = []
@@ -313,7 +318,7 @@ export async function runRevenueIntelligence(
     const cdrRecords = await prisma.cDRRecord.findMany({ where: whereClause })
     if (cdrRecords.length === 0) continue
 
-    const serviceTypes = ['voice', 'sms', 'data', 'international', 'recharge', 'subscription', 'roaming'] as const
+    const serviceTypes = ['voice', 'sms', 'data', 'international', 'recharge', 'subscription', 'roaming', 'mobileMoney'] as const
     const breakdown: Record<string, { count: number; revenueTTC: number }> = {}
     for (const st of serviceTypes) {
       breakdown[st] = { count: 0, revenueTTC: 0 }

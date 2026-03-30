@@ -13,6 +13,7 @@ const KNOWN_CALL_TYPES = new Set([
   'voice', 'voice-onnet', 'voice-offnet', 'sms', 'sms-national', 'sms-intl',
   'data', 'international', 'incoming-intl', 'voice-intl-outgoing',
   'recharge', 'subscription', 'roaming-voice', 'roaming-sms',
+  'ussd', 'mobile-money',
 ])
 
 /**
@@ -53,8 +54,8 @@ export function validateCDRRow(params: {
     warnings.push(`Row ${params.rowIndex}: Origin number has unusual format: ${params.origin.substring(0, 15)}`)
   }
   if (params.destination && !/^\+?[\d\s()-]{4,20}$/.test(params.destination)) {
-    // Allow empty destination for data/recharge/subscription
-    if (!['data', 'recharge', 'subscription'].includes(params.callType)) {
+    // Allow empty destination for data/recharge/subscription/ussd/mobile-money
+    if (!['data', 'recharge', 'subscription', 'ussd', 'mobile-money'].includes(params.callType)) {
       warnings.push(`Row ${params.rowIndex}: Destination number has unusual format`)
     }
   }

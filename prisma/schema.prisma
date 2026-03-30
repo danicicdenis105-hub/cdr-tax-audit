@@ -53,6 +53,7 @@ model CDRRecord {
   calculatedRevenue   Float          // Amount TTC
   amountHT            Float?         // Amount HT = TTC / (1 + taxTTC/100)
   taxTictech          Float?         // TICTECH = amountHT * (tictechRate/100)
+  taxMTT              Float?         // MTT (Mobile Transaction Tax) for mobile money records
   destinationOperator String?        // resolved operator name from prefix
   recordHash          String?        // SHA-256 for duplicate detection
   billingType         String?        // "prepaid" or "postpaid"
@@ -108,6 +109,8 @@ model SalesReport {
   rechargeRevenue     Float          @default(0)
   subscriptionRevenue Float          @default(0)
   roamingRevenue      Float          @default(0)
+  ussdRevenue         Float          @default(0)
+  mobileMoneyRevenue  Float          @default(0)
   submittedAt         DateTime       @default(now())
 
   @@unique([companyId, period])
@@ -148,6 +151,8 @@ model Settings {
   voiceRate              Float   @default(25)   // currency per minute
   smsRate                Float   @default(15)   // currency per message
   dataRate               Float   @default(0.5)  // currency per MB
+  ussdRate               Float   @default(0)    // currency per USSD session
+  mttRate                Float   @default(0)    // Mobile Transaction Tax rate (%) on mobile money
   emailAlerts            Boolean @default(true)
   weeklyReports          Boolean @default(true)
   uploadNotifications    Boolean @default(false)

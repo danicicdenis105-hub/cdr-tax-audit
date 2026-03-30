@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     // JSON single entry
     const body = await request.json()
-    const { companyId, period, reportedRevenue, voiceRevenue, smsRevenue, dataRevenue, intlRevenue, rechargeRevenue, subscriptionRevenue, roamingRevenue } = body
+    const { companyId, period, reportedRevenue, voiceRevenue, smsRevenue, dataRevenue, intlRevenue, rechargeRevenue, subscriptionRevenue, roamingRevenue, ussdRevenue, mobileMoneyRevenue } = body
 
     if (!companyId || !period || reportedRevenue == null) {
       return NextResponse.json({ error: 'Company, period, and reported revenue are required' }, { status: 400 })
@@ -66,6 +66,8 @@ export async function POST(request: NextRequest) {
         rechargeRevenue: parseFloat(rechargeRevenue) || 0,
         subscriptionRevenue: parseFloat(subscriptionRevenue) || 0,
         roamingRevenue: parseFloat(roamingRevenue) || 0,
+        ussdRevenue: parseFloat(ussdRevenue) || 0,
+        mobileMoneyRevenue: parseFloat(mobileMoneyRevenue) || 0,
       },
       update: {
         reportedRevenue: parseFloat(reportedRevenue) || 0,
@@ -76,6 +78,8 @@ export async function POST(request: NextRequest) {
         rechargeRevenue: parseFloat(rechargeRevenue) || 0,
         subscriptionRevenue: parseFloat(subscriptionRevenue) || 0,
         roamingRevenue: parseFloat(roamingRevenue) || 0,
+        ussdRevenue: parseFloat(ussdRevenue) || 0,
+        mobileMoneyRevenue: parseFloat(mobileMoneyRevenue) || 0,
       },
     })
 
@@ -124,6 +128,8 @@ async function handleCSVUpload(request: NextRequest, session: { userId: string }
   const rechargeIdx = header.findIndex(h => h.includes('recharge'))
   const subscriptionIdx = header.findIndex(h => h.includes('subscription') || h.includes('abonnement'))
   const roamingIdx = header.findIndex(h => h.includes('roaming'))
+  const ussdIdx = header.findIndex(h => h.includes('ussd'))
+  const mobileMoneyIdx = header.findIndex(h => h.includes('mobile') && h.includes('money') || h.includes('mobilemoney') || h.includes('mobile_money'))
 
   if (companyIdx < 0 || periodIdx < 0 || revenueIdx < 0) {
     return NextResponse.json({ error: 'CSV must have company, period, and revenue/total columns' }, { status: 400 })
@@ -165,6 +171,8 @@ async function handleCSVUpload(request: NextRequest, session: { userId: string }
         rechargeRevenue: rechargeIdx >= 0 ? parseFloat(cols[rechargeIdx]) || 0 : 0,
         subscriptionRevenue: subscriptionIdx >= 0 ? parseFloat(cols[subscriptionIdx]) || 0 : 0,
         roamingRevenue: roamingIdx >= 0 ? parseFloat(cols[roamingIdx]) || 0 : 0,
+        ussdRevenue: ussdIdx >= 0 ? parseFloat(cols[ussdIdx]) || 0 : 0,
+        mobileMoneyRevenue: mobileMoneyIdx >= 0 ? parseFloat(cols[mobileMoneyIdx]) || 0 : 0,
       },
       update: {
         reportedRevenue: revenue,
@@ -175,6 +183,8 @@ async function handleCSVUpload(request: NextRequest, session: { userId: string }
         rechargeRevenue: rechargeIdx >= 0 ? parseFloat(cols[rechargeIdx]) || 0 : 0,
         subscriptionRevenue: subscriptionIdx >= 0 ? parseFloat(cols[subscriptionIdx]) || 0 : 0,
         roamingRevenue: roamingIdx >= 0 ? parseFloat(cols[roamingIdx]) || 0 : 0,
+        ussdRevenue: ussdIdx >= 0 ? parseFloat(cols[ussdIdx]) || 0 : 0,
+        mobileMoneyRevenue: mobileMoneyIdx >= 0 ? parseFloat(cols[mobileMoneyIdx]) || 0 : 0,
       },
     })
     processed++

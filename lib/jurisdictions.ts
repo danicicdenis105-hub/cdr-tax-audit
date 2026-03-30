@@ -31,6 +31,7 @@ export interface JurisdictionConfig {
   taxes: {
     primary: TaxComponent    // Main VAT/TVA
     secondary: TaxComponent  // Sector-specific tax
+    mtt?: TaxComponent       // Mobile Transaction Tax (optional, jurisdiction-specific)
   }
   // Formula: Amount HT = Amount TTC / (1 + primary.rate/100)
   // Secondary tax = Amount HT * (secondary.rate / 100)
@@ -39,7 +40,10 @@ export interface JurisdictionConfig {
     voiceRate: number
     smsRate: number
     dataRate: number
+    ussdRate: number  // per USSD session
   }
+  // USSD codes used by mobile money services (for auto-detection)
+  mobileMoneyUSSDCodes?: string[]
   dateFormat: string
 }
 
@@ -116,6 +120,7 @@ export const JURISDICTIONS: Record<string, JurisdictionConfig> = {
       voiceRate: 25,
       smsRate: 15,
       dataRate: 0.5,
+      ussdRate: 10,   // XAF per USSD session
     },
     dateFormat: 'dmy',
   },
@@ -144,6 +149,13 @@ export const JURISDICTIONS: Record<string, JurisdictionConfig> = {
         rate: 8,
         appliedOn: 'ht',
         description: "Droit d'Accise sur les communications mobiles",
+      },
+      mtt: {
+        name: 'Mobile Transaction Tax (MTT)',
+        code: 'MTT',
+        rate: 0.5,
+        appliedOn: 'ht',
+        description: 'Taxe sur les Transactions Mobiles — 0.5% on mobile money transaction value',
       },
     },
     operators: [
@@ -184,7 +196,10 @@ export const JURISDICTIONS: Record<string, JurisdictionConfig> = {
       voiceRate: 300,  // MGA per minute
       smsRate: 150,    // MGA per SMS
       dataRate: 5,     // MGA per MB
+      ussdRate: 50,    // MGA per USSD session
     },
+    // USSD short codes for mobile money services in Madagascar
+    mobileMoneyUSSDCodes: ['*111#', '*144#', '*201#'],  // MVola, Orange Money, Airtel Money
     dateFormat: 'dmy',
   },
 }
@@ -223,23 +238,29 @@ export function calculateJurisdictionTaxes(
   amountTTC: number,
   jurisdictionCode: string,
   overridePrimaryRate?: number,
-  overrideSecondaryRate?: number
+  overrideSecondaryRate?: number,
+  options?: { isMobileMoney?: boolean; overrideMttRate?: number }
 ): {
   amountHT: number
   primaryTax: number
   secondaryTax: number
+  mttTax: number
   totalTax: number
   primaryRate: number
   secondaryRate: number
+  mttRate: number
 } {
   const j = getJurisdiction(jurisdictionCode)
   const primaryRate = overridePrimaryRate ?? j.taxes.primary.rate
   const secondaryRate = overrideSecondaryRate ?? j.taxes.secondary.rate
+  const mttRate = options?.overrideMttRate ?? (j.taxes.mtt?.rate ?? 0)
 
   const amountHT = amountTTC / (1 + primaryRate / 100)
   const primaryTax = amountTTC - amountHT
   const secondaryTax = amountHT * (secondaryRate / 100)
-  const totalTax = primaryTax + secondaryTax
+  // MTT applies only to mobile money transactions
+  const mttTax = (options?.isMobileMoney && mttRate > 0) ? amountHT * (mttRate / 100) : 0
+  const totalTax = primaryTax + secondaryTax + mttTax
 
-  return { amountHT, primaryTax, secondaryTax, totalTax, primaryRate, secondaryRate }
+  return { amountHT, primaryTax, secondaryTax, mttTax, totalTax, primaryRate, secondaryRate, mttRate }
 }

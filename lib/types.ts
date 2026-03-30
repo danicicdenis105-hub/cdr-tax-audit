@@ -50,6 +50,7 @@ export interface CallVolumeAnalysis {
   recharge?: ServiceAnalysis
   subscription?: ServiceAnalysis
   roaming?: ServiceAnalysis
+  mobileMoney?: ServiceAnalysis
 }
 
 export interface AnalysisResult {
@@ -133,6 +134,7 @@ export interface RevenueIntelligenceResult {
     recharge: ServiceBreakdownItem
     subscription: ServiceBreakdownItem
     roaming: ServiceBreakdownItem
+    mobileMoney: ServiceBreakdownItem
   }
 }
 
@@ -144,6 +146,8 @@ export interface Settings {
   voiceRate: number
   smsRate: number
   dataRate: number
+  ussdRate: number
+  mttRate: number
   emailAlerts: boolean
   weeklyReports: boolean
   uploadNotifications: boolean

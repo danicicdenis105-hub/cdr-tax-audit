@@ -47,6 +47,8 @@ export async function PUT(request: NextRequest) {
         voiceRate: config.defaultRates.voiceRate,
         smsRate: config.defaultRates.smsRate,
         dataRate: config.defaultRates.dataRate,
+        ussdRate: config.defaultRates.ussdRate,
+        mttRate: config.taxes.mtt?.rate ?? 0,
       },
       create: {
         id: 'global',
@@ -58,6 +60,8 @@ export async function PUT(request: NextRequest) {
         voiceRate: config.defaultRates.voiceRate,
         smsRate: config.defaultRates.smsRate,
         dataRate: config.defaultRates.dataRate,
+        ussdRate: config.defaultRates.ussdRate,
+        mttRate: config.taxes.mtt?.rate ?? 0,
       },
     })
 

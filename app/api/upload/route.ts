@@ -134,6 +134,9 @@ export async function POST(request: NextRequest) {
     const subscriberIdx = header.findIndex(h =>
       h.includes('subscriber') || h.includes('abonne') || h.includes('abonné') || h.includes('msisdn')
     )
+    const ussdCodeIdx = header.findIndex(h =>
+      h.includes('ussd_code') || h.includes('ussd') || h.includes('short_code') || h.includes('service_code')
+    )
     const billingTypeIdx = header.findIndex(h =>
       h.includes('billing_type') || h.includes('type_facturation') || h.includes('billing') || h.includes('prepaid') || h.includes('postpaid')
     )
@@ -187,6 +190,7 @@ export async function POST(request: NextRequest) {
       calculatedRevenue: number
       amountHT: number | null
       taxTictech: number | null
+      taxMTT: number | null
       destinationOperator: string | null
       recordHash: string
       billingType: string | null
@@ -250,6 +254,11 @@ export async function POST(request: NextRequest) {
           case 'international':
             revenueTTC = (effectiveDuration / 60) * effectiveVoiceRate * 3
             break
+          case 'ussd':
+          case 'mobile-money':
+            // USSD/Mobile money: use amount if provided, else use ussd session rate
+            revenueTTC = settings.ussdRate || 50
+            break
           case 'recharge':
           case 'subscription':
             revenueTTC = parseFloat(cols[revenueIdx >= 0 ? revenueIdx : 0]) || 0
@@ -301,12 +310,13 @@ export async function POST(request: NextRequest) {
       }
       newHashes.add(recordHash)
 
-      // Compute HT and TICTECH — use historical tax period if available
+      // Compute HT, TICTECH, and MTT — use historical tax period if available
       const taxRates = getTaxRatesForDate(taxPeriods, timestamp, settings)
       const effectiveTaxDivisor = 1 + taxRates.tvaRate / 100
 
       let amountHT: number | null = null
       let taxTictech: number | null = null
+      let taxMTT: number | null = null
       if (amountHTIdx >= 0 && cols[amountHTIdx]) {
         amountHT = parseFloat(cols[amountHTIdx]) || null
       }
@@ -315,6 +325,11 @@ export async function POST(request: NextRequest) {
       }
       if (amountHT !== null && amountHT > 0) {
         taxTictech = amountHT * (taxRates.tictechRate / 100)
+        // Calculate MTT for mobile money / USSD transactions
+        const isMobileMoney = normalizedType === 'ussd' || normalizedType === 'mobile-money'
+        if (isMobileMoney && settings.mttRate > 0) {
+          taxMTT = amountHT * (settings.mttRate / 100)
+        }
       }
 
       // Resolve destination operator
@@ -335,6 +350,7 @@ export async function POST(request: NextRequest) {
         calculatedRevenue: revenueTTC,
         amountHT,
         taxTictech,
+        taxMTT,
         destinationOperator: destOperator,
         recordHash,
         billingType,
@@ -430,6 +446,7 @@ function getRateForService(
     'international': 'international', 'incoming-intl': 'international', 'voice-intl-outgoing': 'international',
     'recharge': 'recharge', 'subscription': 'subscription',
     'roaming-voice': 'roaming', 'roaming-sms': 'roaming',
+    'ussd': 'mobile-money', 'mobile-money': 'mobile-money',
   }
 
   const mappedType = serviceMap[serviceType] || serviceType
@@ -466,6 +483,15 @@ function getTaxRatesForDate(
  */
 function normalizeCallType(raw: string): string {
   const t = (raw || '').toLowerCase().trim()
+
+  // Mobile Money (must check before USSD since mobile money is a specific USSD use case)
+  if (t.includes('mobile-money') || t.includes('mobile_money') || t.includes('mobilemoney')
+    || t.includes('mvola') || t.includes('orange money') || t.includes('orange_money')
+    || t.includes('airtel money') || t.includes('airtel_money')
+    || t.includes('m-pesa') || t.includes('mpesa')) return 'mobile-money'
+
+  // USSD
+  if (t.includes('ussd') || t === 'ussd_session' || t === 'ussd-session') return 'ussd'
 
   // Recharge
   if (t.includes('recharge') || t.includes('rechargement') || t.includes('topup') || t.includes('top-up')) return 'recharge'

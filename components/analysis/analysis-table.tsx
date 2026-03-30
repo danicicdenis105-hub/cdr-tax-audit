@@ -116,7 +116,7 @@ export function AnalysisTable({ results }: AnalysisTableProps) {
                     {isExpanded && (
                       <tr key={`${result.companyId}-expanded`} className="bg-secondary/30">
                         <td colSpan={9} className="p-4">
-                          <div className="grid gap-4 sm:grid-cols-4">
+                          <div className="grid gap-4 sm:grid-cols-4 lg:grid-cols-5">
                             <ServiceDetail
                               title="Voice Calls"
                               count={result.callVolumeAnalysis.voice.count}
@@ -138,6 +138,14 @@ export function AnalysisTable({ results }: AnalysisTableProps) {
                               count={result.callVolumeAnalysis.international.count}
                               revenue={result.callVolumeAnalysis.international.revenue}
                             />
+                            {result.callVolumeAnalysis.mobileMoney && result.callVolumeAnalysis.mobileMoney.count > 0 && (
+                              <ServiceDetail
+                                title="Mobile Money / USSD"
+                                count={result.callVolumeAnalysis.mobileMoney.count}
+                                revenue={result.callVolumeAnalysis.mobileMoney.revenue}
+                                unit="sessions"
+                              />
+                            )}
                           </div>
                         </td>
                       </tr>

@@ -42,6 +42,7 @@ export function CompanyRevenueTable({ results }: CompanyRevenueTableProps) {
     recharge: 'Recharge',
     subscription: 'Subscriptions',
     roaming: 'Roaming',
+    mobileMoney: 'Mobile Money / USSD',
   }
 
   return (

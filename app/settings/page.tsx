@@ -26,6 +26,8 @@ interface SettingsData {
   voiceRate: number
   smsRate: number
   dataRate: number
+  ussdRate: number
+  mttRate: number
   emailAlerts: boolean
   weeklyReports: boolean
   uploadNotifications: boolean
@@ -75,7 +77,7 @@ interface JurisdictionInfo {
 
 const defaultSettings: SettingsData = {
   taxTTC: 26, tictechRate: 7, discrepancyThreshold: 5, criticalThreshold: 20,
-  voiceRate: 25, smsRate: 15, dataRate: 0.5,
+  voiceRate: 25, smsRate: 15, dataRate: 0.5, ussdRate: 0, mttRate: 0,
   emailAlerts: true, weeklyReports: true, uploadNotifications: false,
   reportFormat: 'pdf', dateFormat: 'dmy', currency: 'xaf',
 }
@@ -237,6 +239,11 @@ export default function SettingsPage() {
                     <Input id="threshold" type="number" value={settings.discrepancyThreshold} onChange={e => update('discrepancyThreshold', parseFloat(e.target.value) || 0)} />
                   </Field>
                   <Field>
+                    <FieldLabel htmlFor="mtt-rate">Mobile Transaction Tax — MTT (%)</FieldLabel>
+                    <p className="text-xs text-muted-foreground mb-1">Applied on mobile money / USSD transaction value (HT)</p>
+                    <Input id="mtt-rate" type="number" step="0.1" value={settings.mttRate} onChange={e => update('mttRate', parseFloat(e.target.value) || 0)} />
+                  </Field>
+                  <Field>
                     <FieldLabel htmlFor="critical-threshold">Critical Risk Threshold (%)</FieldLabel>
                     <Input id="critical-threshold" type="number" value={settings.criticalThreshold} onChange={e => update('criticalThreshold', parseFloat(e.target.value) || 0)} />
                   </Field>
@@ -262,6 +269,10 @@ export default function SettingsPage() {
                   <Field>
                     <FieldLabel htmlFor="data-rate">Data Rate ({currencySymbol}/MB)</FieldLabel>
                     <Input id="data-rate" type="number" step="0.1" value={settings.dataRate} onChange={e => update('dataRate', parseFloat(e.target.value) || 0)} />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="ussd-rate">USSD Session Rate ({currencySymbol}/session)</FieldLabel>
+                    <Input id="ussd-rate" type="number" step="1" value={settings.ussdRate} onChange={e => update('ussdRate', parseFloat(e.target.value) || 0)} />
                   </Field>
                 </FieldGroup>
               </CardContent>
@@ -369,6 +380,7 @@ export default function SettingsPage() {
                           <SelectItem value="data">Data</SelectItem>
                           <SelectItem value="international">International</SelectItem>
                           <SelectItem value="roaming">Roaming</SelectItem>
+                          <SelectItem value="mobile-money">Mobile Money / USSD</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -384,6 +396,7 @@ export default function SettingsPage() {
                           <SelectItem value="per_minute">Per Minute</SelectItem>
                           <SelectItem value="per_message">Per Message</SelectItem>
                           <SelectItem value="per_mb">Per MB</SelectItem>
+                          <SelectItem value="per_session">Per Session</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
