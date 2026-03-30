@@ -1,4 +1,4 @@
-# CDR Tax Analyzer — Deployment Guide
+# TerraNode — Deployment Guide
 
 ## Prerequisites
 

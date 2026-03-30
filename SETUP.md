@@ -1,4 +1,4 @@
-# CDR Tax Analyzer - Setup Guide
+# TerraNode - Setup Guide
 
 ## Government Revenue Assurance Platform for Telecommunications Tax Auditing
 

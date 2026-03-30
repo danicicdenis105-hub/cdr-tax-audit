@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { resolveOperator, getSettings } from '@/lib/analysis-engine'
+import { resolveOperator, getSettings, getActiveJurisdiction } from '@/lib/analysis-engine'
 import { requireAuth, verifySession } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/rate-limiter'
 import { validateCDRRow, summarizeValidation } from '@/lib/cdr-validator'
@@ -13,17 +13,19 @@ export async function GET(request: NextRequest) {
   if (session instanceof NextResponse) return session
 
   try {
+    const jurisdiction = await getActiveJurisdiction()
     const uploads = await prisma.cDRUpload.findMany({
+      where: { jurisdiction },
       include: { company: { select: { name: true } } },
       orderBy: { uploadedAt: 'desc' },
       take: 20,
     })
 
     const stats = {
-      totalUploads: await prisma.cDRUpload.count(),
-      totalRecords: await prisma.cDRRecord.count(),
-      completedUploads: await prisma.cDRUpload.count({ where: { status: 'completed' } }),
-      failedUploads: await prisma.cDRUpload.count({ where: { status: 'failed' } }),
+      totalUploads: await prisma.cDRUpload.count({ where: { jurisdiction } }),
+      totalRecords: await prisma.cDRRecord.count({ where: { jurisdiction } }),
+      completedUploads: await prisma.cDRUpload.count({ where: { status: 'completed', jurisdiction } }),
+      failedUploads: await prisma.cDRUpload.count({ where: { status: 'failed', jurisdiction } }),
     }
 
     return NextResponse.json({ uploads, stats })
@@ -68,6 +70,9 @@ export async function POST(request: NextRequest) {
     const fileBytes = Buffer.from(fileBuffer)
     const fileHash = createHash('sha256').update(fileBytes).digest('hex')
 
+    // Get active jurisdiction
+    const jurisdiction = await getActiveJurisdiction()
+
     // Create upload record with integrity metadata
     const upload = await prisma.cDRUpload.create({
       data: {
@@ -77,6 +82,7 @@ export async function POST(request: NextRequest) {
         fileSize: file.size,
         fileHash,
         uploadedById: session.userId,
+        jurisdiction,
         status: 'processing',
       },
     })
@@ -185,6 +191,7 @@ export async function POST(request: NextRequest) {
       recordHash: string
       billingType: string | null
       uploadId: string
+      jurisdiction: string
     }> = []
 
     for (let i = 1; i < lines.length; i++) {
@@ -313,7 +320,7 @@ export async function POST(request: NextRequest) {
       // Resolve destination operator
       let destOperator: string | null = null
       if (dest && dest !== 'BATCH') {
-        destOperator = await resolveOperator(dest)
+        destOperator = await resolveOperator(dest, jurisdiction)
       }
 
       batch.push({
@@ -332,6 +339,7 @@ export async function POST(request: NextRequest) {
         recordHash,
         billingType,
         uploadId: upload.id,
+        jurisdiction,
       })
 
       if (batch.length >= batchSize) {

@@ -1,5 +1,6 @@
 import { prisma } from './db'
 import type { AnalysisResult, MonthlyTrend, ServiceTypeBreakdown, DashboardStats, RevenueIntelligenceResult } from './types'
+import { getJurisdiction } from './jurisdictions'
 
 export async function getSettings() {
   let settings = await prisma.settings.findUnique({ where: { id: 'global' } })
@@ -7,6 +8,23 @@ export async function getSettings() {
     settings = await prisma.settings.create({ data: { id: 'global' } })
   }
   return settings
+}
+
+/** Get the active jurisdiction code from settings */
+export async function getActiveJurisdiction(): Promise<string> {
+  const settings = await getSettings()
+  return settings.activeJurisdiction
+}
+
+/** Get tax rates for the active jurisdiction (settings override or jurisdiction defaults) */
+export async function getJurisdictionTaxRates() {
+  const settings = await getSettings()
+  const j = getJurisdiction(settings.activeJurisdiction)
+  return {
+    jurisdiction: j,
+    primaryRate: settings.taxTTC,
+    secondaryRate: settings.tictechRate,
+  }
 }
 
 /**
@@ -28,9 +46,12 @@ function calculateTaxLeakage(discrepancy: number, taxTTC: number, tictechRate: n
  * Resolve destination operator from phone number using prefix matching.
  * Returns operator name or null if no match.
  */
-export async function resolveOperator(phoneNumber: string): Promise<string | null> {
+export async function resolveOperator(phoneNumber: string, jurisdiction?: string): Promise<string | null> {
+  const where: Record<string, unknown> = {}
+  if (jurisdiction) where.jurisdiction = jurisdiction
   const operators = await prisma.telecomCompany.findMany({
     select: { name: true, numberPrefixes: true },
+    where,
   })
 
   // Strip leading + or 00
@@ -68,9 +89,10 @@ function categorizeCallType(callType: string): string {
 
 export async function runAnalysis(period?: string, billingType?: string): Promise<AnalysisResult[]> {
   const settings = await getSettings()
-  const taxPeriods = await prisma.taxPeriod.findMany({ orderBy: { startDate: 'desc' } })
+  const jurisdiction = settings.activeJurisdiction
+  const taxPeriods = await prisma.taxPeriod.findMany({ where: { jurisdiction }, orderBy: { startDate: 'desc' } })
   const companies = await prisma.telecomCompany.findMany({
-    where: { status: { not: 'suspended' } },
+    where: { status: { not: 'suspended' }, jurisdiction },
   })
 
   const results: AnalysisResult[] = []
@@ -165,6 +187,7 @@ export async function getMonthlyTrends(months = 12): Promise<MonthlyTrend[]> {
   const trends: MonthlyTrend[] = []
   const now = new Date()
   const settings = await getSettings()
+  const jurisdiction = settings.activeJurisdiction
 
   for (let i = months - 1; i >= 0; i--) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
@@ -175,13 +198,14 @@ export async function getMonthlyTrends(months = 12): Promise<MonthlyTrend[]> {
     const cdrRecords = await prisma.cDRRecord.findMany({
       where: {
         timestamp: { gte: date, lte: endOfMonth },
+        jurisdiction,
       },
     })
 
     const calculated = cdrRecords.reduce((sum, r) => sum + r.calculatedRevenue, 0)
 
     const salesReports = await prisma.salesReport.findMany({
-      where: { period },
+      where: { period, company: { jurisdiction } },
     })
     const reported = salesReports.reduce((sum, r) => sum + r.reportedRevenue, 0)
 
@@ -195,6 +219,8 @@ export async function getMonthlyTrends(months = 12): Promise<MonthlyTrend[]> {
 }
 
 export async function getServiceTypeBreakdown(): Promise<ServiceTypeBreakdown[]> {
+  const settings = await getSettings()
+  const jurisdiction = settings.activeJurisdiction
   const typeConfig = [
     { label: 'Voice', callTypes: ['voice', 'voice-onnet', 'voice-offnet'], salesField: 'voiceRevenue' },
     { label: 'SMS', callTypes: ['sms', 'sms-national', 'sms-intl'], salesField: 'smsRevenue' },
@@ -209,11 +235,11 @@ export async function getServiceTypeBreakdown(): Promise<ServiceTypeBreakdown[]>
 
   for (const config of typeConfig) {
     const cdrRecords = await prisma.cDRRecord.findMany({
-      where: { callType: { in: config.callTypes } },
+      where: { callType: { in: config.callTypes }, jurisdiction },
     })
     const cdrRevenue = cdrRecords.reduce((sum, r) => sum + r.calculatedRevenue, 0)
 
-    const salesReports = await prisma.salesReport.findMany()
+    const salesReports = await prisma.salesReport.findMany({ where: { company: { jurisdiction } } })
     const reportedRevenue = salesReports.reduce((sum, r) => {
       const val = r[config.salesField as keyof typeof r]
       return sum + (typeof val === 'number' ? val : 0)
@@ -239,8 +265,10 @@ export async function getRiskDistribution() {
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const companies = await prisma.telecomCompany.count()
-  const cdrCount = await prisma.cDRRecord.count()
+  const settings = await getSettings()
+  const jurisdiction = settings.activeJurisdiction
+  const companies = await prisma.telecomCompany.count({ where: { jurisdiction } })
+  const cdrCount = await prisma.cDRRecord.count({ where: { jurisdiction } })
   const results = await runAnalysis()
 
   const totalLeakage = results.reduce((sum, r) => sum + r.estimatedTaxLeakage, 0)
@@ -265,7 +293,8 @@ export async function runRevenueIntelligence(
   companyId?: string
 ): Promise<RevenueIntelligenceResult[]> {
   const settings = await getSettings()
-  const companiesWhere: Record<string, unknown> = { status: { not: 'suspended' } }
+  const jurisdiction = settings.activeJurisdiction
+  const companiesWhere: Record<string, unknown> = { status: { not: 'suspended' }, jurisdiction }
   if (companyId) companiesWhere.id = companyId
 
   const companies = await prisma.telecomCompany.findMany({ where: companiesWhere })

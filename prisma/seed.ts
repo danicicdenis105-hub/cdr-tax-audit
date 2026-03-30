@@ -5,12 +5,13 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Seeding database...')
 
-  // Create default settings — CAR tax model
+  // Create default settings — starts with CAR as active jurisdiction
   await prisma.settings.upsert({
     where: { id: 'global' },
     update: {},
     create: {
       id: 'global',
+      activeJurisdiction: 'CAR',
       taxTTC: 26,          // Amount HT = Amount TTC / 1.26
       tictechRate: 7,      // TICTECH = 7% of Amount HT
       discrepancyThreshold: 5,
@@ -36,8 +37,10 @@ async function main() {
     },
   })
 
-  // Create Central African Republic telecom operators
-  const operators = [
+  // =============================================
+  // Central African Republic telecom operators
+  // =============================================
+  const carOperators = [
     {
       id: 'car-moov',
       name: 'MOOV Africa CAR',
@@ -48,6 +51,7 @@ async function main() {
       contactPhone: '+236 70 00 00 00',
       taxId: 'NIF-CAR-MOOV-001',
       numberPrefixes: '70,23670,0023670',
+      jurisdiction: 'CAR',
     },
     {
       id: 'car-orange',
@@ -59,6 +63,7 @@ async function main() {
       contactPhone: '+236 72 00 00 00',
       taxId: 'NIF-CAR-ORANGE-002',
       numberPrefixes: '72,23672,0023672,74,23674,0023674',
+      jurisdiction: 'CAR',
     },
     {
       id: 'car-telecel',
@@ -70,6 +75,7 @@ async function main() {
       contactPhone: '+236 75 00 00 00',
       taxId: 'NIF-CAR-TELECEL-003',
       numberPrefixes: '75,23675,0023675,76,23676,0023676',
+      jurisdiction: 'CAR',
     },
     {
       id: 'car-socatel',
@@ -81,6 +87,7 @@ async function main() {
       contactPhone: '+236 21 00 00 00',
       taxId: 'NIF-CAR-SOCATEL-004',
       numberPrefixes: '21,23621,0023621,22,23622,0023622',
+      jurisdiction: 'CAR',
     },
     {
       id: 'car-azur',
@@ -92,10 +99,65 @@ async function main() {
       contactPhone: '+236 77 00 00 00',
       taxId: 'NIF-CAR-AZUR-005',
       numberPrefixes: '77,23677,0023677',
+      jurisdiction: 'CAR',
     },
   ]
 
-  for (const operator of operators) {
+  // =============================================
+  // Madagascar telecom operators
+  // =============================================
+  const mdgOperators = [
+    {
+      id: 'mdg-telma',
+      name: 'Telma (Yas)',
+      licenseNumber: 'ARTEC-MDG-001',
+      region: 'National',
+      status: 'active',
+      contactEmail: 'regulatory@telma.mg',
+      contactPhone: '+261 34 00 000 00',
+      taxId: 'NIF-MDG-TELMA-001',
+      numberPrefixes: '034,038,26134,26138',
+      jurisdiction: 'MDG',
+    },
+    {
+      id: 'mdg-orange',
+      name: 'Orange Madagascar',
+      licenseNumber: 'ARTEC-MDG-002',
+      region: 'National',
+      status: 'active',
+      contactEmail: 'regulatory@orange.mg',
+      contactPhone: '+261 32 00 000 00',
+      taxId: 'NIF-MDG-ORANGE-002',
+      numberPrefixes: '032,037,26132,26137',
+      jurisdiction: 'MDG',
+    },
+    {
+      id: 'mdg-airtel',
+      name: 'Airtel Madagascar',
+      licenseNumber: 'ARTEC-MDG-003',
+      region: 'National',
+      status: 'active',
+      contactEmail: 'regulatory@airtel.mg',
+      contactPhone: '+261 33 00 000 00',
+      taxId: 'NIF-MDG-AIRTEL-003',
+      numberPrefixes: '033,26133',
+      jurisdiction: 'MDG',
+    },
+    {
+      id: 'mdg-blueline',
+      name: 'Blueline',
+      licenseNumber: 'ARTEC-MDG-004',
+      region: 'National',
+      status: 'active',
+      contactEmail: 'regulatory@blueline.mg',
+      contactPhone: '+261 39 00 000 00',
+      taxId: 'NIF-MDG-BLUELINE-004',
+      numberPrefixes: '039,26139',
+      jurisdiction: 'MDG',
+    },
+  ]
+
+  for (const operator of [...carOperators, ...mdgOperators]) {
     await prisma.telecomCompany.upsert({
       where: { id: operator.id },
       update: operator,
@@ -103,7 +165,7 @@ async function main() {
     })
   }
 
-  console.log('Seeding complete! 5 CAR operators created.')
+  console.log('Seeding complete! 5 CAR operators + 4 Madagascar operators created.')
 }
 
 main()

@@ -59,6 +59,20 @@ interface Company {
   name: string
 }
 
+interface JurisdictionInfo {
+  active: string
+  activeConfig: {
+    code: string
+    name: string
+    flag: string
+    currency: { code: string; symbol: string }
+    taxes: {
+      primary: { name: string; code: string; rate: number }
+      secondary: { name: string; code: string; rate: number }
+    }
+  }
+}
+
 const defaultSettings: SettingsData = {
   taxTTC: 26, tictechRate: 7, discrepancyThreshold: 5, criticalThreshold: 20,
   voiceRate: 25, smsRate: 15, dataRate: 0.5,
@@ -71,6 +85,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsData>(defaultSettings)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+  const [jurisdictionInfo, setJurisdictionInfo] = useState<JurisdictionInfo | null>(null)
 
   // Tax periods state
   const [taxPeriods, setTaxPeriods] = useState<TaxPeriod[]>([])
@@ -81,7 +96,17 @@ export default function SettingsPage() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [newPlan, setNewPlan] = useState({ companyId: '', serviceType: '', rate: '', unit: 'per_minute', startDate: '', endDate: '' })
 
+  // Jurisdiction labels
+  const primaryTaxName = jurisdictionInfo?.activeConfig?.taxes?.primary?.name || 'TVA (TTC)'
+  const secondaryTaxName = jurisdictionInfo?.activeConfig?.taxes?.secondary?.name || 'TICTECH'
+  const currencySymbol = jurisdictionInfo?.activeConfig?.currency?.symbol || 'XAF'
+  const countryName = jurisdictionInfo?.activeConfig?.name || 'Central African Republic'
+
   useEffect(() => {
+    fetch('/api/jurisdiction').then(r => r.json()).then(data => {
+      if (data && !data.error) setJurisdictionInfo(data)
+    }).catch(() => {})
+
     fetch('/api/settings').then(r => r.json()).then(data => {
       if (data && !data.error) setSettings(prev => ({ ...prev, ...data }))
     }).catch(() => {})
@@ -185,25 +210,25 @@ export default function SettingsPage() {
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-foreground">System Settings</h2>
             <p className="text-sm text-muted-foreground">
-              Configure CAR tax model parameters and system preferences
+              Configure {countryName} tax model parameters and system preferences
             </p>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <Card className="bg-card">
               <CardHeader>
-                <CardTitle className="text-base font-medium">Tax Calculation — CAR Model</CardTitle>
-                <CardDescription>TTC/HT dual-tax structure with TICTECH</CardDescription>
+                <CardTitle className="text-base font-medium">Tax Calculation — {countryName}</CardTitle>
+                <CardDescription>TTC/HT dual-tax structure with {secondaryTaxName}</CardDescription>
               </CardHeader>
               <CardContent>
                 <FieldGroup>
                   <Field>
-                    <FieldLabel htmlFor="tax-ttc">TTC Tax Rate (%)</FieldLabel>
+                    <FieldLabel htmlFor="tax-ttc">{primaryTaxName} Rate (%)</FieldLabel>
                     <p className="text-xs text-muted-foreground mb-1">Amount HT = Amount TTC / (1 + rate/100)</p>
                     <Input id="tax-ttc" type="number" value={settings.taxTTC} onChange={e => update('taxTTC', parseFloat(e.target.value) || 0)} />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="tictech-rate">TICTECH Rate (%)</FieldLabel>
+                    <FieldLabel htmlFor="tictech-rate">{secondaryTaxName} Rate (%)</FieldLabel>
                     <p className="text-xs text-muted-foreground mb-1">Applied on Amount HT</p>
                     <Input id="tictech-rate" type="number" value={settings.tictechRate} onChange={e => update('tictechRate', parseFloat(e.target.value) || 0)} />
                   </Field>
@@ -222,20 +247,20 @@ export default function SettingsPage() {
             <Card className="bg-card">
               <CardHeader>
                 <CardTitle className="text-base font-medium">Service Rates</CardTitle>
-                <CardDescription>Default rates for CDR revenue calculation (in XAF)</CardDescription>
+                <CardDescription>Default rates for CDR revenue calculation (in {currencySymbol})</CardDescription>
               </CardHeader>
               <CardContent>
                 <FieldGroup>
                   <Field>
-                    <FieldLabel htmlFor="voice-rate">Voice Call Rate (XAF/min)</FieldLabel>
+                    <FieldLabel htmlFor="voice-rate">Voice Call Rate ({currencySymbol}/min)</FieldLabel>
                     <Input id="voice-rate" type="number" step="1" value={settings.voiceRate} onChange={e => update('voiceRate', parseFloat(e.target.value) || 0)} />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="sms-rate">SMS Rate (XAF/message)</FieldLabel>
+                    <FieldLabel htmlFor="sms-rate">SMS Rate ({currencySymbol}/message)</FieldLabel>
                     <Input id="sms-rate" type="number" step="1" value={settings.smsRate} onChange={e => update('smsRate', parseFloat(e.target.value) || 0)} />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="data-rate">Data Rate (XAF/MB)</FieldLabel>
+                    <FieldLabel htmlFor="data-rate">Data Rate ({currencySymbol}/MB)</FieldLabel>
                     <Input id="data-rate" type="number" step="0.1" value={settings.dataRate} onChange={e => update('dataRate', parseFloat(e.target.value) || 0)} />
                   </Field>
                 </FieldGroup>
@@ -260,7 +285,7 @@ export default function SettingsPage() {
                       <Input type="number" placeholder="19" value={newPeriod.tvaRate} onChange={e => setNewPeriod(p => ({ ...p, tvaRate: e.target.value }))} />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-muted-foreground">TICTECH Rate (%)</label>
+                      <label className="text-xs font-medium text-muted-foreground">{secondaryTaxName} Rate (%)</label>
                       <Input type="number" placeholder="7" value={newPeriod.tictechRate} onChange={e => setNewPeriod(p => ({ ...p, tictechRate: e.target.value }))} />
                     </div>
                     <div>
@@ -283,7 +308,7 @@ export default function SettingsPage() {
                           <tr className="border-b border-border text-xs text-muted-foreground">
                             <th className="pb-2 text-left font-medium">Name</th>
                             <th className="pb-2 text-right font-medium">TVA %</th>
-                            <th className="pb-2 text-right font-medium">TICTECH %</th>
+                            <th className="pb-2 text-right font-medium">{secondaryTaxName} %</th>
                             <th className="pb-2 text-left font-medium">Start</th>
                             <th className="pb-2 text-left font-medium">End</th>
                             <th className="pb-2 text-right font-medium"></th>
@@ -348,7 +373,7 @@ export default function SettingsPage() {
                       </Select>
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-muted-foreground">Rate (XAF)</label>
+                      <label className="text-xs font-medium text-muted-foreground">Rate ({currencySymbol})</label>
                       <Input type="number" step="0.1" placeholder="25" value={newPlan.rate} onChange={e => setNewPlan(p => ({ ...p, rate: e.target.value }))} />
                     </div>
                     <div>
@@ -482,6 +507,7 @@ export default function SettingsPage() {
                       <SelectTrigger id="currency"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="xaf">XAF (FCFA)</SelectItem>
+                        <SelectItem value="mga">MGA (Ariary)</SelectItem>
                         <SelectItem value="usd">USD ($)</SelectItem>
                         <SelectItem value="eur">EUR (&euro;)</SelectItem>
                       </SelectContent>

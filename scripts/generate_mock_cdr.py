@@ -1,6 +1,6 @@
 """
 Generate mock CDR data for Orange CAR based on real aggregated report patterns.
-Output: CSV file ready for upload to CDR Tax Analyzer.
+Output: CSV file ready for upload to TerraNode.
 """
 import csv
 import random

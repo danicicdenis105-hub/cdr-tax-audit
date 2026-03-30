@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || 'cdr-tax-analyzer-secret-change-in-production'
+  process.env.NEXTAUTH_SECRET || 'terranode-secret-change-in-production'
 )
 
 const PUBLIC_PATHS = ['/login', '/api/auth/login']

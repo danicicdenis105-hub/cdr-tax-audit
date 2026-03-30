@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAuth, requireMutatingAuth } from '@/lib/auth'
+import { getActiveJurisdiction } from '@/lib/analysis-engine'
 
 export async function GET(request: NextRequest) {
   const session = requireAuth(request)
@@ -11,8 +12,10 @@ export async function GET(request: NextRequest) {
     const companyId = searchParams.get('companyId')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
+    const jurisdiction = await getActiveJurisdiction()
 
-    const where = companyId ? { companyId } : {}
+    const where: Record<string, unknown> = { company: { jurisdiction } }
+    if (companyId) where.companyId = companyId
     const [reports, total] = await Promise.all([
       prisma.salesReport.findMany({
         where,
@@ -126,8 +129,9 @@ async function handleCSVUpload(request: NextRequest, session: { userId: string }
     return NextResponse.json({ error: 'CSV must have company, period, and revenue/total columns' }, { status: 400 })
   }
 
-  // Load companies for name-to-ID lookup
-  const companies = await prisma.telecomCompany.findMany()
+  // Load companies for name-to-ID lookup (filtered by active jurisdiction)
+  const jurisdiction = await getActiveJurisdiction()
+  const companies = await prisma.telecomCompany.findMany({ where: { jurisdiction } })
   const companyMap = new Map<string, string>()
   for (const c of companies) {
     companyMap.set(c.name.toLowerCase(), c.id)

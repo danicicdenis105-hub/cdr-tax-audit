@@ -8,7 +8,7 @@ const geist = Geist({ subsets: ["latin"], variable: '--font-geist' });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: '--font-geist-mono' });
 
 export const metadata: Metadata = {
-  title: 'CDR Tax Analyzer - Government Revenue Assurance Platform',
+  title: 'TerraNode - Government Revenue Assurance Platform',
   description: 'Analyze telecom CDR data to detect tax leakage and ensure revenue compliance',
 }
 

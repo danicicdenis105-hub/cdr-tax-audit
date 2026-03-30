@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAuth, requireMutatingAuth } from '@/lib/auth'
+import { getActiveJurisdiction } from '@/lib/analysis-engine'
 
 export async function GET(request: NextRequest) {
   const session = requireAuth(request)
   if (session instanceof NextResponse) return session
 
   try {
+    const jurisdiction = await getActiveJurisdiction()
     const companies = await prisma.telecomCompany.findMany({
+      where: { jurisdiction },
       orderBy: { createdAt: 'desc' },
     })
     return NextResponse.json(companies)
@@ -37,6 +40,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'License number already registered' }, { status: 409 })
     }
 
+    const jurisdiction = await getActiveJurisdiction()
     const company = await prisma.telecomCompany.create({
       data: {
         name,
@@ -45,6 +49,7 @@ export async function POST(request: NextRequest) {
         contactEmail,
         contactPhone: contactPhone || '',
         taxId,
+        jurisdiction,
         status: 'active',
       },
     })

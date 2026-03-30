@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'cdr-tax-analyzer-secret-change-in-production'
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'terranode-secret-change-in-production'
 const SESSION_COOKIE = 'cdr-session'
 const CSRF_COOKIE = 'csrf-token'
 const SESSION_EXPIRY = '8h'

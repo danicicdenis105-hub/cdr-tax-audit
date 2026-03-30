@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     doc.rect(0, 0, 297, 35, 'F')
     doc.setTextColor(255, 255, 255)
     doc.setFontSize(20)
-    doc.text('CDR Tax Analyzer - Revenue Assurance Report', 15, 15)
+    doc.text('TerraNode - Revenue Assurance Report', 15, 15)
     doc.setFontSize(10)
     doc.text(`Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 15, 23)
     doc.text(`Period: ${period || 'All Time'}  |  TVA: ${taxTTC}%  |  TICTECH: ${tictechRate}%`, 15, 29)
@@ -258,7 +258,7 @@ export async function GET(request: NextRequest) {
       doc.setFontSize(7)
       doc.setTextColor(150, 150, 150)
       doc.text(
-        `CDR Tax Analyzer - Confidential Government Document  |  Page ${i} of ${pageCount}`,
+        `TerraNode - Confidential Government Document  |  Page ${i} of ${pageCount}`,
         148, 200, { align: 'center' }
       )
     }
@@ -268,7 +268,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="cdr-tax-report-${new Date().toISOString().split('T')[0]}.pdf"`,
+        'Content-Disposition': `attachment; filename="terranode-report-${new Date().toISOString().split('T')[0]}.pdf"`,
       },
     })
   } catch (error) {

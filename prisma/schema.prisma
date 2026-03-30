@@ -27,6 +27,7 @@ model TelecomCompany {
   contactPhone    String       @default("")
   taxId           String
   numberPrefixes  String       @default("") // comma-separated phone prefixes, e.g. "70,23670"
+  jurisdiction    String       @default("CAR") // CAR, MDG, etc.
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   cdrRecords      CDRRecord[]
@@ -34,6 +35,8 @@ model TelecomCompany {
   reports         Report[]
   salesReports    SalesReport[]
   ratePlans       RatePlan[]
+
+  @@index([jurisdiction])
 }
 
 model CDRRecord {
@@ -57,11 +60,14 @@ model CDRRecord {
   upload              CDRUpload?     @relation(fields: [uploadId], references: [id])
   createdAt           DateTime       @default(now())
 
+  jurisdiction        String         @default("CAR")
+
   @@index([companyId])
   @@index([callType])
   @@index([timestamp])
   @@index([uploadId])
   @@index([recordHash])
+  @@index([jurisdiction])
 }
 
 model CDRUpload {
@@ -80,11 +86,13 @@ model CDRUpload {
   rejectedCount    Int            @default(0)
   warningCount     Int            @default(0)
   validationReport String?        // JSON with validation details
+  jurisdiction     String         @default("CAR")
   uploadedAt       DateTime       @default(now())
   processedAt      DateTime?
   records          CDRRecord[]
 
   @@index([companyId])
+  @@index([jurisdiction])
 }
 
 model SalesReport {
@@ -121,22 +129,25 @@ model Report {
   parameters       String?         // JSON: generation parameters for reproducibility
   version          Int             @default(1)
   generatedBy      String?         // user ID who generated
+  jurisdiction     String          @default("CAR")
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
   @@index([companyId])
   @@index([type])
+  @@index([jurisdiction])
 }
 
 model Settings {
   id                     String  @id @default("global")
+  activeJurisdiction     String  @default("CAR") // CAR, MDG, etc.
   taxTTC                 Float   @default(26)   // TTC tax rate (Amount HT = Amount TTC / (1 + rate/100))
-  tictechRate            Float   @default(7)    // TICTECH rate applied on Amount HT
+  tictechRate            Float   @default(7)    // TICTECH rate applied on Amount HT (or excise rate for MDG)
   discrepancyThreshold   Float   @default(5)
   criticalThreshold      Float   @default(20)
-  voiceRate              Float   @default(25)   // XAF per minute
-  smsRate                Float   @default(15)   // XAF per message
-  dataRate               Float   @default(0.5)  // XAF per MB
+  voiceRate              Float   @default(25)   // currency per minute
+  smsRate                Float   @default(15)   // currency per message
+  dataRate               Float   @default(0.5)  // currency per MB
   emailAlerts            Boolean @default(true)
   weeklyReports          Boolean @default(true)
   uploadNotifications    Boolean @default(false)
@@ -146,15 +157,17 @@ model Settings {
 }
 
 model TaxPeriod {
-  id          String    @id @default(cuid())
-  name        String               // e.g., "2023 TVA Rate"
-  tvaRate     Float                // TVA/TTC rate for this period
-  tictechRate Float                // TICTECH rate for this period
-  startDate   DateTime
-  endDate     DateTime?            // null = still active
-  createdAt   DateTime  @default(now())
+  id           String    @id @default(cuid())
+  name         String               // e.g., "2023 TVA Rate"
+  tvaRate      Float                // TVA/TTC rate for this period
+  tictechRate  Float                // TICTECH/Excise rate for this period
+  jurisdiction String    @default("CAR")
+  startDate    DateTime
+  endDate      DateTime?            // null = still active
+  createdAt    DateTime  @default(now())
 
   @@index([startDate])
+  @@index([jurisdiction])
 }
 
 model RatePlan {

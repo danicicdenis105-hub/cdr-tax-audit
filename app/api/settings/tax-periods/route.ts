@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAuth, requireMutatingAuth } from '@/lib/auth'
+import { getActiveJurisdiction } from '@/lib/analysis-engine'
 
 export async function GET(request: NextRequest) {
   const session = requireAuth(request)
   if (session instanceof NextResponse) return session
 
   try {
+    const jurisdiction = await getActiveJurisdiction()
     const periods = await prisma.taxPeriod.findMany({
+      where: { jurisdiction },
       orderBy: { startDate: 'desc' },
     })
     return NextResponse.json(periods)
@@ -29,11 +32,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name, TVA rate, TICTECH rate, and start date are required' }, { status: 400 })
     }
 
+    const jurisdiction = await getActiveJurisdiction()
     const period = await prisma.taxPeriod.create({
       data: {
         name,
         tvaRate: parseFloat(tvaRate),
         tictechRate: parseFloat(tictechRate),
+        jurisdiction,
         startDate: new Date(startDate),
         endDate: endDate ? new Date(endDate) : null,
       },

@@ -41,7 +41,7 @@ export default function LoginPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Shield className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">CDR Tax Analyzer</h1>
+          <h1 className="text-2xl font-bold text-foreground">TerraNode</h1>
           <p className="text-sm text-muted-foreground">Government Revenue Assurance Platform</p>
         </div>
 
