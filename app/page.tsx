@@ -25,8 +25,20 @@ export default function DashboardPage() {
   const [risk, setRisk] = useState<RiskDistribution[]>([])
   const [service, setService] = useState<ServiceTypeBreakdown[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [currencySymbol, setCurrencySymbol] = useState<string>('FCFA')
+  const [taxLabel, setTaxLabel] = useState<string>('TVA + TICTECH')
 
   useEffect(() => {
+    fetch('/api/jurisdiction')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.activeConfig) {
+          setCurrencySymbol(data.activeConfig.currency.symbol)
+          setTaxLabel(`${data.activeConfig.taxes.primary.code} + ${data.activeConfig.taxes.secondary.code}`)
+        }
+      })
+      .catch(() => {})
+
     fetch('/api/dashboard')
       .then(res => res.json())
       .then(data => {
@@ -56,7 +68,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-6">
-            <StatsCards stats={stats} />
+            <StatsCards stats={stats} currencySymbol={currencySymbol} taxLabel={taxLabel} />
 
             {!isLoading && !hasData ? (
               <Card className="bg-card">

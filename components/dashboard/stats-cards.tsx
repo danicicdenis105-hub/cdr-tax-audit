@@ -5,9 +5,11 @@ import type { DashboardStats } from '@/lib/types'
 
 interface StatsCardsProps {
   stats: DashboardStats
+  currencySymbol?: string
+  taxLabel?: string
 }
 
-export function StatsCards({ stats }: StatsCardsProps) {
+export function StatsCards({ stats, currencySymbol, taxLabel }: StatsCardsProps) {
   const cards = [
     {
       title: 'Total Companies',
@@ -23,9 +25,9 @@ export function StatsCards({ stats }: StatsCardsProps) {
     },
     {
       title: 'Est. Tax Leakage',
-      value: formatCurrency(stats.totalEstimatedLeakage),
+      value: formatCurrency(stats.totalEstimatedLeakage, currencySymbol),
       icon: DollarSign,
-      subtitle: 'TVA + TICTECH',
+      subtitle: taxLabel || 'TVA + TICTECH',
       alert: stats.totalEstimatedLeakage > 0,
     },
     {
@@ -43,7 +45,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
     },
     {
       title: 'Revenue Discrepancy',
-      value: formatCurrency(stats.revenueDiscrepancy),
+      value: formatCurrency(stats.revenueDiscrepancy, currencySymbol),
       icon: TrendingUp,
       subtitle: 'CDR vs reported totals',
       alert: stats.revenueDiscrepancy > 0,
