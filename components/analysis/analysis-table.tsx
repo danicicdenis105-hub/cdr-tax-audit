@@ -9,9 +9,11 @@ import type { AnalysisResult } from '@/lib/types'
 
 interface AnalysisTableProps {
   results: AnalysisResult[]
+  currencySymbol?: string
 }
 
-export function AnalysisTable({ results }: AnalysisTableProps) {
+export function AnalysisTable({ results, currencySymbol }: AnalysisTableProps) {
+  const cs = currencySymbol || '$'
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
 
   const toggleRow = (companyId: string) => {
@@ -72,13 +74,13 @@ export function AnalysisTable({ results }: AnalysisTableProps) {
                         </div>
                       </td>
                       <td className="py-3 text-right font-mono font-medium text-foreground">
-                        ${(result.cdrCalculatedRevenue / 1000000).toFixed(2)}M
+                        {cs}{(result.cdrCalculatedRevenue / 1000000).toFixed(2)}M
                       </td>
                       <td className="py-3 text-right font-mono text-muted-foreground">
-                        ${(result.reportedRevenue / 1000000).toFixed(2)}M
+                        {cs}{(result.reportedRevenue / 1000000).toFixed(2)}M
                       </td>
                       <td className="py-3 text-right font-mono font-medium text-destructive">
-                        ${(result.discrepancy / 1000000).toFixed(2)}M
+                        {cs}{(result.discrepancy / 1000000).toFixed(2)}M
                       </td>
                       <td className="py-3 text-right">
                         <span
@@ -97,7 +99,7 @@ export function AnalysisTable({ results }: AnalysisTableProps) {
                         </span>
                       </td>
                       <td className="py-3 text-right font-mono font-medium text-destructive">
-                        ${(result.estimatedTaxLeakage / 1000000).toFixed(2)}M
+                        {cs}{(result.estimatedTaxLeakage / 1000000).toFixed(2)}M
                       </td>
                       <td className="py-3 text-center">
                         <RiskBadge level={result.riskLevel} />
@@ -121,22 +123,26 @@ export function AnalysisTable({ results }: AnalysisTableProps) {
                               title="Voice Calls"
                               count={result.callVolumeAnalysis.voice.count}
                               revenue={result.callVolumeAnalysis.voice.revenue}
+                              currencySymbol={cs}
                             />
                             <ServiceDetail
                               title="SMS Messages"
                               count={result.callVolumeAnalysis.sms.count}
                               revenue={result.callVolumeAnalysis.sms.revenue}
+                              currencySymbol={cs}
                             />
                             <ServiceDetail
                               title="Data Usage"
                               count={result.callVolumeAnalysis.data.count}
                               revenue={result.callVolumeAnalysis.data.revenue}
                               unit="GB"
+                              currencySymbol={cs}
                             />
                             <ServiceDetail
                               title="International"
                               count={result.callVolumeAnalysis.international.count}
                               revenue={result.callVolumeAnalysis.international.revenue}
+                              currencySymbol={cs}
                             />
                             {result.callVolumeAnalysis.mobileMoney && result.callVolumeAnalysis.mobileMoney.count > 0 && (
                               <ServiceDetail
@@ -144,6 +150,7 @@ export function AnalysisTable({ results }: AnalysisTableProps) {
                                 count={result.callVolumeAnalysis.mobileMoney.count}
                                 revenue={result.callVolumeAnalysis.mobileMoney.revenue}
                                 unit="sessions"
+                                currencySymbol={cs}
                               />
                             )}
                           </div>
@@ -186,11 +193,13 @@ function ServiceDetail({
   count,
   revenue,
   unit = '',
+  currencySymbol = '$',
 }: {
   title: string
   count: number
   revenue: number
   unit?: string
+  currencySymbol?: string
 }) {
   const formatCount = (n: number) => {
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`
@@ -202,7 +211,7 @@ function ServiceDetail({
     <div className="rounded-md bg-card p-3">
       <p className="text-xs font-medium text-muted-foreground">{title}</p>
       <p className="mt-1 text-lg font-semibold text-foreground">
-        ${(revenue / 1000000).toFixed(2)}M
+        {currencySymbol}{(revenue / 1000000).toFixed(2)}M
       </p>
       <p className="text-xs text-muted-foreground">
         {formatCount(count)} {unit || 'transactions'}

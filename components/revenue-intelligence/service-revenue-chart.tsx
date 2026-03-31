@@ -7,6 +7,7 @@ import type { RevenueIntelligenceResult } from '@/lib/types'
 
 interface ServiceRevenueChartProps {
   results: RevenueIntelligenceResult[]
+  currencySymbol?: string
 }
 
 const chartConfig = {
@@ -16,7 +17,8 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ServiceRevenueChart({ results }: ServiceRevenueChartProps) {
+export function ServiceRevenueChart({ results, currencySymbol }: ServiceRevenueChartProps) {
+  const cs = currencySymbol || '$'
   const serviceLabels: Record<string, string> = {
     voice: 'Voice',
     sms: 'SMS',
@@ -25,6 +27,7 @@ export function ServiceRevenueChart({ results }: ServiceRevenueChartProps) {
     recharge: 'Recharge',
     subscription: 'Subscriptions',
     roaming: 'Roaming',
+    mobileMoney: 'Mobile Money / USSD',
   }
 
   const aggregated: Record<string, { count: number; revenueTTC: number }> = {}
@@ -66,7 +69,7 @@ export function ServiceRevenueChart({ results }: ServiceRevenueChartProps) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
-                tickFormatter={(value) => `$${value}M`}
+                tickFormatter={(value) => `${cs}${value}M`}
               />
               <YAxis
                 type="category"
@@ -79,7 +82,7 @@ export function ServiceRevenueChart({ results }: ServiceRevenueChartProps) {
               <ChartTooltip
                 content={
                   <ChartTooltipContent
-                    formatter={(value) => `$${Number(value).toFixed(2)}M`}
+                    formatter={(value) => `${cs}${Number(value).toFixed(2)}M`}
                   />
                 }
               />

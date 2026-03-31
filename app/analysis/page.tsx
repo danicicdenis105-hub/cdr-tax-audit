@@ -15,6 +15,7 @@ import type { AnalysisResult } from '@/lib/types'
 export default function AnalysisPage() {
   const [results, setResults] = useState<AnalysisResult[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [currencySymbol, setCurrencySymbol] = useState('$')
 
   const fetchAnalysis = useCallback(async (params?: { company?: string; period?: string; riskLevel?: string }) => {
     setIsLoading(true)
@@ -34,7 +35,17 @@ export default function AnalysisPage() {
     }
   }, [])
 
-  useEffect(() => { fetchAnalysis() }, [fetchAnalysis])
+  useEffect(() => {
+    fetchAnalysis()
+    fetch('/api/jurisdiction')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.activeConfig?.currency?.symbol) {
+          setCurrencySymbol(data.activeConfig.currency.symbol)
+        }
+      })
+      .catch(() => {})
+  }, [fetchAnalysis])
 
   const handleExport = () => {
     window.open('/api/reports/export?format=csv', '_blank')
@@ -87,12 +98,12 @@ export default function AnalysisPage() {
               <>
                 <div className="grid gap-6 lg:grid-cols-3">
                   <div className="lg:col-span-2">
-                    <ComparisonChart results={results} />
+                    <ComparisonChart results={results} currencySymbol={currencySymbol} />
                   </div>
-                  <DiscrepancyDetails results={results} />
+                  <DiscrepancyDetails results={results} currencySymbol={currencySymbol} />
                 </div>
 
-                <AnalysisTable results={results} />
+                <AnalysisTable results={results} currencySymbol={currencySymbol} />
               </>
             )}
           </div>

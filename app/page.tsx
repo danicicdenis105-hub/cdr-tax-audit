@@ -84,13 +84,13 @@ export default function DashboardPage() {
             ) : (
               <>
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <RevenueComparisonChart data={trends} />
-                  <LeakageTrendChart data={trends} />
+                  <RevenueComparisonChart data={trends} currencySymbol={currencySymbol} />
+                  <LeakageTrendChart data={trends} currencySymbol={currencySymbol} />
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-3">
                   <div className="lg:col-span-2">
-                    <ServiceBreakdownChart data={service} />
+                    <ServiceBreakdownChart data={service} currencySymbol={currencySymbol} />
                   </div>
                   <RiskDistributionChart data={risk} />
                 </div>

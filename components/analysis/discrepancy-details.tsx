@@ -5,9 +5,11 @@ import type { AnalysisResult } from '@/lib/types'
 
 interface DiscrepancyDetailsProps {
   results: AnalysisResult[]
+  currencySymbol?: string
 }
 
-export function DiscrepancyDetails({ results }: DiscrepancyDetailsProps) {
+export function DiscrepancyDetails({ results, currencySymbol }: DiscrepancyDetailsProps) {
+  const cs = currencySymbol || '$'
   const totalCDRRevenue = results.reduce((sum, r) => sum + r.cdrCalculatedRevenue, 0)
   const totalReportedRevenue = results.reduce((sum, r) => sum + r.reportedRevenue, 0)
   const totalDiscrepancy = totalCDRRevenue - totalReportedRevenue
@@ -29,7 +31,7 @@ export function DiscrepancyDetails({ results }: DiscrepancyDetailsProps) {
             <span className="text-sm font-medium text-destructive">Tax Leakage Alert</span>
           </div>
           <p className="mt-2 text-2xl font-bold text-destructive">
-            ${(totalLeakage / 1000000).toFixed(2)}M
+            {cs}{(totalLeakage / 1000000).toFixed(2)}M
           </p>
           <p className="text-xs text-muted-foreground">Estimated tax revenue loss this period</p>
         </div>
@@ -37,19 +39,19 @@ export function DiscrepancyDetails({ results }: DiscrepancyDetailsProps) {
         <div className="space-y-3">
           <StatRow
             label="Total CDR Revenue"
-            value={`$${(totalCDRRevenue / 1000000).toFixed(2)}M`}
+            value={`${cs}${(totalCDRRevenue / 1000000).toFixed(2)}M`}
             icon={TrendingUp}
             iconColor="text-chart-1"
           />
           <StatRow
             label="Total Reported Revenue"
-            value={`$${(totalReportedRevenue / 1000000).toFixed(2)}M`}
+            value={`${cs}${(totalReportedRevenue / 1000000).toFixed(2)}M`}
             icon={TrendingDown}
             iconColor="text-chart-2"
           />
           <StatRow
             label="Revenue Gap"
-            value={`$${(totalDiscrepancy / 1000000).toFixed(2)}M`}
+            value={`${cs}${(totalDiscrepancy / 1000000).toFixed(2)}M`}
             icon={DollarSign}
             iconColor="text-destructive"
             highlight

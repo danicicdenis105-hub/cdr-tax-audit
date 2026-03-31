@@ -7,6 +7,7 @@ import type { MonthlyTrend } from '@/lib/types'
 
 interface LeakageTrendChartProps {
   data: MonthlyTrend[]
+  currencySymbol?: string
 }
 
 const chartConfig = {
@@ -16,7 +17,8 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function LeakageTrendChart({ data }: LeakageTrendChartProps) {
+export function LeakageTrendChart({ data, currencySymbol }: LeakageTrendChartProps) {
+  const cs = currencySymbol || '$'
   return (
     <Card className="bg-card">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -44,12 +46,12 @@ export function LeakageTrendChart({ data }: LeakageTrendChartProps) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
-                tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`}
+                tickFormatter={(value) => `${cs}${(value / 1000000).toFixed(1)}M`}
               />
               <ChartTooltip
                 content={
                   <ChartTooltipContent
-                    formatter={(value) => `$${(Number(value) / 1000000).toFixed(2)}M`}
+                    formatter={(value) => `${cs}${(Number(value) / 1000000).toFixed(2)}M`}
                   />
                 }
               />

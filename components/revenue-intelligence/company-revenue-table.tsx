@@ -10,13 +10,14 @@ import type { RevenueIntelligenceResult } from '@/lib/types'
 interface CompanyRevenueTableProps {
   results: RevenueIntelligenceResult[]
   secondaryTaxLabel?: string
+  currencySymbol?: string
 }
 
-const fmt = (v: number) => {
-  if (v >= 1_000_000_000) return `$${(v / 1_000_000_000).toFixed(2)}B`
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`
-  if (v >= 1_000) return `$${(v / 1_000).toFixed(1)}K`
-  return `$${v.toFixed(0)}`
+const fmtWithSymbol = (v: number, cs: string) => {
+  if (v >= 1_000_000_000) return `${cs}${(v / 1_000_000_000).toFixed(2)}B`
+  if (v >= 1_000_000) return `${cs}${(v / 1_000_000).toFixed(2)}M`
+  if (v >= 1_000) return `${cs}${(v / 1_000).toFixed(1)}K`
+  return `${cs}${v.toFixed(0)}`
 }
 
 const fmtCount = (n: number) => {
@@ -25,7 +26,9 @@ const fmtCount = (n: number) => {
   return n.toString()
 }
 
-export function CompanyRevenueTable({ results, secondaryTaxLabel }: CompanyRevenueTableProps) {
+export function CompanyRevenueTable({ results, secondaryTaxLabel, currencySymbol }: CompanyRevenueTableProps) {
+  const cs = currencySymbol || '$'
+  const fmt = (v: number) => fmtWithSymbol(v, cs)
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
 
   const toggleRow = (companyId: string) => {

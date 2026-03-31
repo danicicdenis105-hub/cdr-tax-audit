@@ -11,6 +11,7 @@ import type { TelecomCompany, AnalysisResult } from '@/lib/types'
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<TelecomCompany[]>([])
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([])
+  const [currencySymbol, setCurrencySymbol] = useState('$')
 
   const fetchData = useCallback(async () => {
     try {
@@ -28,7 +29,17 @@ export default function CompaniesPage() {
     }
   }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    fetchData()
+    fetch('/api/jurisdiction')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.activeConfig?.currency?.symbol) {
+          setCurrencySymbol(data.activeConfig.currency.symbol)
+        }
+      })
+      .catch(() => {})
+  }, [fetchData])
 
   return (
     <div className="min-h-screen bg-background">
@@ -48,7 +59,7 @@ export default function CompaniesPage() {
 
           <div className="space-y-6">
             <CompaniesStats companies={companies} />
-            <CompaniesTable companies={companies} analysisResults={analysisResults} onUpdate={fetchData} />
+            <CompaniesTable companies={companies} analysisResults={analysisResults} onUpdate={fetchData} currencySymbol={currencySymbol} />
           </div>
         </main>
       </div>

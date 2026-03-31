@@ -53,6 +53,7 @@ export default function RevenueIntelligencePage() {
   const [billingType, setBillingType] = useState('all')
   const [primaryTaxLabel, setPrimaryTaxLabel] = useState('TVA')
   const [secondaryTaxLabel, setSecondaryTaxLabel] = useState('TICTECH')
+  const [currencySymbol, setCurrencySymbol] = useState('$')
   const periodOptions = useMemo(() => generatePeriodOptions(), [])
 
   useEffect(() => {
@@ -64,9 +65,10 @@ export default function RevenueIntelligencePage() {
     fetch('/api/jurisdiction')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (data?.activeConfig?.taxes) {
-          setPrimaryTaxLabel(data.activeConfig.taxes.primary?.name || 'TVA')
-          setSecondaryTaxLabel(data.activeConfig.taxes.secondary?.name || 'TICTECH')
+        if (data?.activeConfig) {
+          setPrimaryTaxLabel(data.activeConfig.taxes?.primary?.name || 'TVA')
+          setSecondaryTaxLabel(data.activeConfig.taxes?.secondary?.name || 'TICTECH')
+          setCurrencySymbol(data.activeConfig.currency?.symbol || '$')
         }
       })
       .catch(() => {})
@@ -208,10 +210,10 @@ export default function RevenueIntelligencePage() {
                 )}
                 {!isLoading && (
                   <>
-                    <RevenueSummaryCards results={results} primaryTaxLabel={primaryTaxLabel} secondaryTaxLabel={secondaryTaxLabel} />
+                    <RevenueSummaryCards results={results} primaryTaxLabel={primaryTaxLabel} secondaryTaxLabel={secondaryTaxLabel} currencySymbol={currencySymbol} />
 
                     <div className="grid gap-6 lg:grid-cols-2">
-                      <ServiceRevenueChart results={results} />
+                      <ServiceRevenueChart results={results} currencySymbol={currencySymbol} />
                       <Card className="bg-card">
                         <CardContent className="p-5">
                           <p className="text-sm font-medium text-foreground mb-4">Tax Obligation Summary</p>
@@ -225,7 +227,7 @@ export default function RevenueIntelligencePage() {
                                   <div className="flex items-center justify-between text-sm mb-1">
                                     <span className="text-foreground font-medium">{r.companyName}</span>
                                     <span className="font-mono text-muted-foreground">
-                                      ${totalTax >= 1_000_000 ? `${(totalTax / 1_000_000).toFixed(2)}M` : `${(totalTax / 1_000).toFixed(1)}K`}
+                                      {totalTax >= 1_000_000 ? `${currencySymbol}${(totalTax / 1_000_000).toFixed(2)}M` : `${currencySymbol}${(totalTax / 1_000).toFixed(1)}K`}
                                     </span>
                                   </div>
                                   <div className="h-2 rounded-full bg-secondary">
@@ -242,7 +244,7 @@ export default function RevenueIntelligencePage() {
                       </Card>
                     </div>
 
-                    <CompanyRevenueTable results={results} secondaryTaxLabel={secondaryTaxLabel} />
+                    <CompanyRevenueTable results={results} secondaryTaxLabel={secondaryTaxLabel} currencySymbol={currencySymbol} />
                   </>
                 )}
               </>

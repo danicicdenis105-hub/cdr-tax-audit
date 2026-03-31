@@ -20,6 +20,7 @@ interface CompaniesTableProps {
   companies: TelecomCompany[]
   analysisResults: AnalysisResult[]
   onUpdate?: () => void
+  currencySymbol?: string
 }
 
 const statusConfig = {
@@ -37,7 +38,8 @@ const statusConfig = {
   },
 }
 
-export function CompaniesTable({ companies, analysisResults, onUpdate }: CompaniesTableProps) {
+export function CompaniesTable({ companies, analysisResults, onUpdate, currencySymbol }: CompaniesTableProps) {
+  const cs = currencySymbol || '$'
   const { authFetch } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -122,10 +124,10 @@ export function CompaniesTable({ companies, analysisResults, onUpdate }: Compani
                       </span>
                     </td>
                     <td className="py-4 text-right font-mono font-medium text-foreground">
-                      {analysis ? `$${(analysis.cdrCalculatedRevenue / 1000000).toFixed(2)}M` : '-'}
+                      {analysis ? `${cs}${(analysis.cdrCalculatedRevenue / 1000000).toFixed(2)}M` : '-'}
                     </td>
                     <td className="py-4 text-right font-mono font-medium text-destructive">
-                      {analysis ? `$${(analysis.estimatedTaxLeakage / 1000000).toFixed(2)}M` : '-'}
+                      {analysis ? `${cs}${(analysis.estimatedTaxLeakage / 1000000).toFixed(2)}M` : '-'}
                     </td>
                     <td className="py-4 text-center">
                       {analysis ? <RiskBadge level={analysis.riskLevel} /> : '-'}

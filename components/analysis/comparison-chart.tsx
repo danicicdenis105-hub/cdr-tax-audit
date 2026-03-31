@@ -7,6 +7,7 @@ import type { AnalysisResult } from '@/lib/types'
 
 interface ComparisonChartProps {
   results: AnalysisResult[]
+  currencySymbol?: string
 }
 
 const chartConfig = {
@@ -20,7 +21,8 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ComparisonChart({ results }: ComparisonChartProps) {
+export function ComparisonChart({ results, currencySymbol }: ComparisonChartProps) {
+  const cs = currencySymbol || '$'
   const chartData = results.map((r) => ({
     name: r.companyName.split(' ')[0],
     fullName: r.companyName,
@@ -62,7 +64,7 @@ export function ComparisonChart({ results }: ComparisonChartProps) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
-                tickFormatter={(value) => `$${value}M`}
+                tickFormatter={(value) => `${cs}${value}M`}
               />
               <ChartTooltip
                 content={
@@ -73,7 +75,7 @@ export function ComparisonChart({ results }: ComparisonChartProps) {
                       }
                       return ''
                     }}
-                    formatter={(value) => `$${Number(value).toFixed(2)}M`}
+                    formatter={(value) => `${cs}${Number(value).toFixed(2)}M`}
                   />
                 }
               />

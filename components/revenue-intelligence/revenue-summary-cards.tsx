@@ -6,9 +6,11 @@ interface RevenueSummaryCardsProps {
   results: RevenueIntelligenceResult[]
   primaryTaxLabel?: string
   secondaryTaxLabel?: string
+  currencySymbol?: string
 }
 
-export function RevenueSummaryCards({ results, primaryTaxLabel, secondaryTaxLabel }: RevenueSummaryCardsProps) {
+export function RevenueSummaryCards({ results, primaryTaxLabel, secondaryTaxLabel, currencySymbol }: RevenueSummaryCardsProps) {
+  const cs = currencySymbol || '$'
   const totalTTC = results.reduce((sum, r) => sum + r.totalRevenueTTC, 0)
   const totalTVA = results.reduce((sum, r) => sum + r.estimatedTVA, 0)
   const totalTICTECH = results.reduce((sum, r) => sum + r.estimatedTICTECH, 0)
@@ -46,10 +48,10 @@ export function RevenueSummaryCards({ results, primaryTaxLabel, secondaryTaxLabe
   ]
 
   const fmt = (v: number) => {
-    if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)}B`
-    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`
-    if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`
-    return v.toFixed(0)
+    if (v >= 1_000_000_000) return `${cs}${(v / 1_000_000_000).toFixed(2)}B`
+    if (v >= 1_000_000) return `${cs}${(v / 1_000_000).toFixed(2)}M`
+    if (v >= 1_000) return `${cs}${(v / 1_000).toFixed(1)}K`
+    return `${cs}${v.toFixed(0)}`
   }
 
   return (
@@ -63,7 +65,7 @@ export function RevenueSummaryCards({ results, primaryTaxLabel, secondaryTaxLabe
                 <card.icon className={`h-4 w-4 ${card.iconColor}`} />
               </div>
             </div>
-            <p className="mt-2 text-2xl font-bold text-foreground">${fmt(card.value)}</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{fmt(card.value)}</p>
             <p className="mt-1 text-xs text-muted-foreground">
               {results.length} {results.length === 1 ? 'company' : 'companies'} analyzed
             </p>
