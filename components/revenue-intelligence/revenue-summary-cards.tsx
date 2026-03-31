@@ -4,9 +4,11 @@ import type { RevenueIntelligenceResult } from '@/lib/types'
 
 interface RevenueSummaryCardsProps {
   results: RevenueIntelligenceResult[]
+  primaryTaxLabel?: string
+  secondaryTaxLabel?: string
 }
 
-export function RevenueSummaryCards({ results }: RevenueSummaryCardsProps) {
+export function RevenueSummaryCards({ results, primaryTaxLabel, secondaryTaxLabel }: RevenueSummaryCardsProps) {
   const totalTTC = results.reduce((sum, r) => sum + r.totalRevenueTTC, 0)
   const totalTVA = results.reduce((sum, r) => sum + r.estimatedTVA, 0)
   const totalTICTECH = results.reduce((sum, r) => sum + r.estimatedTICTECH, 0)
@@ -21,14 +23,14 @@ export function RevenueSummaryCards({ results }: RevenueSummaryCardsProps) {
       bgColor: 'bg-chart-1/10',
     },
     {
-      title: 'Estimated TVA (26%)',
+      title: `Estimated ${primaryTaxLabel || 'TVA'}`,
       value: totalTVA,
       icon: Landmark,
       iconColor: 'text-chart-2',
       bgColor: 'bg-chart-2/10',
     },
     {
-      title: 'Estimated TICTECH (7%)',
+      title: `Estimated ${secondaryTaxLabel || 'TICTECH'}`,
       value: totalTICTECH,
       icon: Cpu,
       iconColor: 'text-chart-3',

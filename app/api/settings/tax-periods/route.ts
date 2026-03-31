@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const { name, tvaRate, tictechRate, startDate, endDate } = body
 
     if (!name || tvaRate == null || tictechRate == null || !startDate) {
-      return NextResponse.json({ error: 'Name, TVA rate, TICTECH rate, and start date are required' }, { status: 400 })
+      return NextResponse.json({ error: 'Name, TVA rate, secondary tax rate, and start date are required' }, { status: 400 })
     }
 
     const jurisdiction = await getActiveJurisdiction()
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         action: 'CREATE',
         entity: 'TaxPeriod',
         entityId: period.id,
-        details: `Created tax period "${name}": TVA ${tvaRate}%, TICTECH ${tictechRate}%`,
+        details: `Created tax period "${name}": TVA ${tvaRate}%, secondary tax ${tictechRate}%`,
       },
     })
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { runAnalysis } from '@/lib/analysis-engine'
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
+import { getJurisdiction } from '@/lib/jurisdictions'
 
 export async function GET(request: NextRequest) {
   const session = requireAuth(request)
@@ -20,6 +21,11 @@ export async function GET(request: NextRequest) {
     const settings = await prisma.settings.findUnique({ where: { id: 'global' } })
     const taxTTC = settings?.taxTTC ?? 26
     const tictechRate = settings?.tictechRate ?? 7
+    const jurisdictionCode = settings?.activeJurisdiction ?? 'CAR'
+    const jConfig = getJurisdiction(jurisdictionCode)
+    const secondaryTaxName = jConfig.taxes.secondary.name
+    const secondaryTaxCode = jConfig.taxes.secondary.code
+    const currencyLabel = jConfig.currency.symbol
 
     const totalLeakage = results.reduce((sum, r) => sum + r.estimatedTaxLeakage, 0)
     const totalDiscrepancy = results.reduce((sum, r) => sum + r.discrepancy, 0)
@@ -41,7 +47,7 @@ export async function GET(request: NextRequest) {
     doc.text('TerraNode - Revenue Assurance Report', 15, 15)
     doc.setFontSize(10)
     doc.text(`Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 15, 23)
-    doc.text(`Period: ${period || 'All Time'}  |  TVA: ${taxTTC}%  |  TICTECH: ${tictechRate}%`, 15, 29)
+    doc.text(`Period: ${period || 'All Time'}  |  TVA: ${taxTTC}%  |  ${secondaryTaxName}: ${tictechRate}%`, 15, 29)
 
     // Confidentiality notice
     doc.setTextColor(239, 68, 68) // red-500
@@ -57,8 +63,8 @@ export async function GET(request: NextRequest) {
     const cardWidth = 62
     const summaryItems = [
       { label: 'Companies Analyzed', value: results.length.toString() },
-      { label: 'Total Revenue Discrepancy', value: `${(totalDiscrepancy / 1_000_000).toFixed(1)}M FCFA` },
-      { label: 'Est. Tax Leakage (TVA+TICTECH)', value: `${(totalLeakage / 1_000_000).toFixed(1)}M FCFA` },
+      { label: 'Total Revenue Discrepancy', value: `${(totalDiscrepancy / 1_000_000).toFixed(1)}M ${currencyLabel}` },
+      { label: `Est. Tax Leakage (TVA+${secondaryTaxCode})`, value: `${(totalLeakage / 1_000_000).toFixed(1)}M ${currencyLabel}` },
       { label: 'Critical/High Risk', value: `${criticalCount + highCount} companies` },
     ]
 
@@ -81,11 +87,11 @@ export async function GET(request: NextRequest) {
 
     const tableData = results.map(r => [
       r.companyName,
-      `${(r.cdrCalculatedRevenue / 1_000_000).toFixed(1)}M FCFA`,
-      `${(r.reportedRevenue / 1_000_000).toFixed(1)}M FCFA`,
-      `${(r.discrepancy / 1_000_000).toFixed(1)}M FCFA`,
+      `${(r.cdrCalculatedRevenue / 1_000_000).toFixed(1)}M ${currencyLabel}`,
+      `${(r.reportedRevenue / 1_000_000).toFixed(1)}M ${currencyLabel}`,
+      `${(r.discrepancy / 1_000_000).toFixed(1)}M ${currencyLabel}`,
       `${r.discrepancyPercentage.toFixed(1)}%`,
-      `${(r.estimatedTaxLeakage / 1_000_000).toFixed(1)}M FCFA`,
+      `${(r.estimatedTaxLeakage / 1_000_000).toFixed(1)}M ${currencyLabel}`,
       r.riskLevel.toUpperCase(),
     ])
 
@@ -131,10 +137,10 @@ export async function GET(request: NextRequest) {
 
       const serviceData = results.map(r => [
         r.companyName,
-        `${(r.callVolumeAnalysis.voice.revenue / 1_000_000).toFixed(1)}M FCFA`,
-        `${(r.callVolumeAnalysis.sms.revenue / 1_000_000).toFixed(1)}M FCFA`,
-        `${(r.callVolumeAnalysis.data.revenue / 1_000_000).toFixed(1)}M FCFA`,
-        `${(r.callVolumeAnalysis.international.revenue / 1_000_000).toFixed(1)}M FCFA`,
+        `${(r.callVolumeAnalysis.voice.revenue / 1_000_000).toFixed(1)}M ${currencyLabel}`,
+        `${(r.callVolumeAnalysis.sms.revenue / 1_000_000).toFixed(1)}M ${currencyLabel}`,
+        `${(r.callVolumeAnalysis.data.revenue / 1_000_000).toFixed(1)}M ${currencyLabel}`,
+        `${(r.callVolumeAnalysis.international.revenue / 1_000_000).toFixed(1)}M ${currencyLabel}`,
       ])
 
       autoTable(doc, {
@@ -188,14 +194,14 @@ export async function GET(request: NextRequest) {
     mY += 7
 
     // Show current global rates
-    doc.text(`- Global TVA Rate: ${taxTTC}%  |  TICTECH Rate: ${tictechRate}%`, 20, mY)
+    doc.text(`- Global TVA Rate: ${taxTTC}%  |  ${secondaryTaxName} Rate: ${tictechRate}%`, 20, mY)
     mY += 5
 
     // Show historical periods if any
     const taxPeriods = await prisma.taxPeriod.findMany({ orderBy: { startDate: 'desc' } })
     for (const tp of taxPeriods) {
       const endStr = tp.endDate ? new Date(tp.endDate).toLocaleDateString() : 'Current'
-      doc.text(`- ${tp.name}: TVA ${tp.tvaRate}%, TICTECH ${tp.tictechRate}% (${new Date(tp.startDate).toLocaleDateString()} - ${endStr})`, 20, mY)
+      doc.text(`- ${tp.name}: TVA ${tp.tvaRate}%, ${secondaryTaxName} ${tp.tictechRate}% (${new Date(tp.startDate).toLocaleDateString()} - ${endStr})`, 20, mY)
       mY += 5
     }
 
@@ -214,7 +220,7 @@ export async function GET(request: NextRequest) {
     mY += 5
     doc.text('- Amount HT = Amount TTC / (1 + TVA_Rate/100)', 20, mY)
     mY += 5
-    doc.text('- TICTECH = Amount HT * (TICTECH_Rate/100)', 20, mY)
+    doc.text(`- ${secondaryTaxName} = Amount HT * (${secondaryTaxCode}_Rate/100)`, 20, mY)
 
     mY += 10
     doc.setFontSize(11)
@@ -227,9 +233,9 @@ export async function GET(request: NextRequest) {
     mY += 5
     doc.text('TVA Leakage = Discrepancy - (Discrepancy / (1 + TVA_Rate/100))', 20, mY)
     mY += 5
-    doc.text('TICTECH Leakage = (Discrepancy / (1 + TVA_Rate/100)) * (TICTECH_Rate/100)', 20, mY)
+    doc.text(`${secondaryTaxName} Leakage = (Discrepancy / (1 + TVA_Rate/100)) * (${secondaryTaxCode}_Rate/100)`, 20, mY)
     mY += 5
-    doc.text('Total Estimated Leakage = TVA Leakage + TICTECH Leakage', 20, mY)
+    doc.text(`Total Estimated Leakage = TVA Leakage + ${secondaryTaxName} Leakage`, 20, mY)
 
     mY += 10
     doc.setFontSize(11)

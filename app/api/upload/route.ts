@@ -310,7 +310,7 @@ export async function POST(request: NextRequest) {
       }
       newHashes.add(recordHash)
 
-      // Compute HT, TICTECH, and MTT — use historical tax period if available
+      // Compute HT, secondary tax (TICTECH/Excise), and MTT — use historical tax period if available
       const taxRates = getTaxRatesForDate(taxPeriods, timestamp, settings)
       const effectiveTaxDivisor = 1 + taxRates.tvaRate / 100
 
@@ -461,7 +461,7 @@ function getRateForService(
 }
 
 /**
- * Get tax rates (TVA + TICTECH) for a specific date.
+ * Get tax rates (TVA + secondary tax) for a specific date.
  * Falls back to global settings if no matching tax period found.
  */
 function getTaxRatesForDate(

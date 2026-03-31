@@ -28,10 +28,10 @@ export async function getJurisdictionTaxRates() {
 }
 
 /**
- * CAR dual-tax leakage calculation:
+ * Dual-tax leakage calculation:
  * From a TTC discrepancy, the government loses:
  * - TVA portion: discrepancy - (discrepancy / (1 + taxTTC/100))
- * - TICTECH: (discrepancy / (1 + taxTTC/100)) * (tictechRate/100)
+ * - Secondary tax (TICTECH/Excise): (discrepancy / (1 + taxTTC/100)) * (secondaryRate/100)
  */
 function calculateTaxLeakage(discrepancy: number, taxTTC: number, tictechRate: number) {
   if (discrepancy <= 0) return { tvaLeakage: 0, tictechLeakage: 0, totalLeakage: 0 }

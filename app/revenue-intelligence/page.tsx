@@ -51,12 +51,24 @@ export default function RevenueIntelligencePage() {
   const [company, setCompany] = useState('all')
   const [period, setPeriod] = useState('')
   const [billingType, setBillingType] = useState('all')
+  const [primaryTaxLabel, setPrimaryTaxLabel] = useState('TVA')
+  const [secondaryTaxLabel, setSecondaryTaxLabel] = useState('TICTECH')
   const periodOptions = useMemo(() => generatePeriodOptions(), [])
 
   useEffect(() => {
     fetch('/api/companies')
       .then((res) => res.json())
       .then((data) => { if (Array.isArray(data)) setCompanies(data) })
+      .catch(() => {})
+
+    fetch('/api/jurisdiction')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.activeConfig?.taxes) {
+          setPrimaryTaxLabel(data.activeConfig.taxes.primary?.name || 'TVA')
+          setSecondaryTaxLabel(data.activeConfig.taxes.secondary?.name || 'TICTECH')
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -82,7 +94,7 @@ export default function RevenueIntelligencePage() {
 
   const handleExportCSV = () => {
     if (results.length === 0) return
-    const headers = ['Company', 'Records', 'Revenue TTC', 'Revenue HT', 'Est. TVA', 'Est. TICTECH', 'Total Tax', 'Has Sales Reports']
+    const headers = ['Company', 'Records', 'Revenue TTC', 'Revenue HT', `Est. ${primaryTaxLabel}`, `Est. ${secondaryTaxLabel}`, 'Total Tax', 'Has Sales Reports']
     const rows = results.map((r) => [
       r.companyName,
       r.recordCount,
@@ -196,7 +208,7 @@ export default function RevenueIntelligencePage() {
                 )}
                 {!isLoading && (
                   <>
-                    <RevenueSummaryCards results={results} />
+                    <RevenueSummaryCards results={results} primaryTaxLabel={primaryTaxLabel} secondaryTaxLabel={secondaryTaxLabel} />
 
                     <div className="grid gap-6 lg:grid-cols-2">
                       <ServiceRevenueChart results={results} />
@@ -230,7 +242,7 @@ export default function RevenueIntelligencePage() {
                       </Card>
                     </div>
 
-                    <CompanyRevenueTable results={results} />
+                    <CompanyRevenueTable results={results} secondaryTaxLabel={secondaryTaxLabel} />
                   </>
                 )}
               </>

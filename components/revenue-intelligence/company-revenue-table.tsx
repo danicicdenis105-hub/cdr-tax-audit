@@ -9,6 +9,7 @@ import type { RevenueIntelligenceResult } from '@/lib/types'
 
 interface CompanyRevenueTableProps {
   results: RevenueIntelligenceResult[]
+  secondaryTaxLabel?: string
 }
 
 const fmt = (v: number) => {
@@ -24,7 +25,7 @@ const fmtCount = (n: number) => {
   return n.toString()
 }
 
-export function CompanyRevenueTable({ results }: CompanyRevenueTableProps) {
+export function CompanyRevenueTable({ results, secondaryTaxLabel }: CompanyRevenueTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
 
   const toggleRow = (companyId: string) => {
@@ -61,7 +62,7 @@ export function CompanyRevenueTable({ results }: CompanyRevenueTableProps) {
                 <th className="pb-3 text-right font-medium">Revenue TTC</th>
                 <th className="pb-3 text-right font-medium">Revenue HT</th>
                 <th className="pb-3 text-right font-medium">Est. TVA</th>
-                <th className="pb-3 text-right font-medium">Est. TICTECH</th>
+                <th className="pb-3 text-right font-medium">Est. {secondaryTaxLabel || 'TICTECH'}</th>
                 <th className="pb-3 text-right font-medium">Total Tax</th>
                 <th className="pb-3 text-center font-medium">Sales Data</th>
               </tr>

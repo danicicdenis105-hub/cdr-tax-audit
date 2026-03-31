@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { runAnalysis } from '@/lib/analysis-engine'
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
+import { getJurisdiction } from '@/lib/jurisdictions'
 
 export async function GET(request: NextRequest) {
   const session = requireAuth(request)
@@ -31,6 +32,9 @@ export async function GET(request: NextRequest) {
     const settings = await prisma.settings.findUnique({ where: { id: 'global' } })
     const taxTTC = settings?.taxTTC ?? 26
     const tictechRate = settings?.tictechRate ?? 7
+    const jurisdictionCode = settings?.activeJurisdiction ?? 'CAR'
+    const jConfig = getJurisdiction(jurisdictionCode)
+    const secondaryTaxName = jConfig.taxes.secondary.name
 
     if (format === 'csv') {
       const headers = [
@@ -40,7 +44,7 @@ export async function GET(request: NextRequest) {
         'Reported Revenue (TTC)',
         'Discrepancy',
         'Discrepancy %',
-        `Estimated Tax Leakage (TVA ${taxTTC}% + TICTECH ${tictechRate}%)`,
+        `Estimated Tax Leakage (TVA ${taxTTC}% + ${secondaryTaxName} ${tictechRate}%)`,
         'Risk Level',
         'Voice Revenue',
         'SMS Revenue',
@@ -85,7 +89,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       exportDate: new Date().toISOString(),
       methodology: {
-        taxRates: { globalTVA: taxTTC, globalTICTECH: tictechRate },
+        taxRates: { globalTVA: taxTTC, [`global${jConfig.taxes.secondary.code}`]: tictechRate },
         historicalTaxPeriods: taxPeriods.map(tp => ({
           name: tp.name, tvaRate: tp.tvaRate, tictechRate: tp.tictechRate,
           startDate: tp.startDate, endDate: tp.endDate,
@@ -97,7 +101,7 @@ export async function GET(request: NextRequest) {
         formulas: {
           discrepancy: 'max(0, CDR_Revenue - Reported_Revenue)',
           tvaLeakage: 'Discrepancy - (Discrepancy / (1 + TVA_Rate/100))',
-          tictechLeakage: '(Discrepancy / (1 + TVA_Rate/100)) * (TICTECH_Rate/100)',
+          secondaryTaxLeakage: `(Discrepancy / (1 + TVA_Rate/100)) * (${jConfig.taxes.secondary.code}_Rate/100)`,
         },
         riskThresholds: {
           low: `< ${settings?.discrepancyThreshold ?? 5}%`,
